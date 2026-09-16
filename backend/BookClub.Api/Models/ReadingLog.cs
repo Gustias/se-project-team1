@@ -7,5 +7,6 @@ public class ReadingLog
     public Book Book { get; set; } = null!;
     public required int UserId { get; set; }
     public required int BookId { get; set; }
+    public int? PagesRead { get; set; }
     public DateOnly Date { get; set; }
 }
