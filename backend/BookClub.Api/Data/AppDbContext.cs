@@ -24,7 +24,6 @@ public class AppDbContext : DbContext
             {
                 rp.UserId,
                 rp.BookId,
-                rp.DateRead
             })
             .IsUnique();
 
@@ -34,7 +33,8 @@ public class AppDbContext : DbContext
                 rl.UserId,
                 rl.BookId,
                 rl.Date
-            });
+            })
+            .IsUnique();
     }
 
     public DbSet<Book> Books => Set<Book>();

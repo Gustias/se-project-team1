@@ -73,7 +73,8 @@ namespace BookClub.Api.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.HasIndex("UserId", "BookId", "Date");
+                    b.HasIndex("UserId", "BookId", "Date")
+                        .IsUnique();
 
                     b.ToTable("ReadingLogs");
                 });
@@ -105,7 +106,7 @@ namespace BookClub.Api.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.HasIndex("UserId", "BookId", "DateRead")
+                    b.HasIndex("UserId", "BookId")
                         .IsUnique();
 
                     b.ToTable("ReadingProgresses");
@@ -131,13 +132,13 @@ namespace BookClub.Api.Migrations
             modelBuilder.Entity("BookClub.Api.Models.ReadingLog", b =>
                 {
                     b.HasOne("BookClub.Api.Models.Book", "Book")
-                        .WithMany()
+                        .WithMany("ReadingLogs")
                         .HasForeignKey("BookId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("BookClub.Api.Models.User", "User")
-                        .WithMany()
+                        .WithMany("ReadingLogs")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -168,11 +169,15 @@ namespace BookClub.Api.Migrations
 
             modelBuilder.Entity("BookClub.Api.Models.Book", b =>
                 {
+                    b.Navigation("ReadingLogs");
+
                     b.Navigation("ReadingProgresses");
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.User", b =>
                 {
+                    b.Navigation("ReadingLogs");
+
                     b.Navigation("ReadingProgresses");
                 });
 #pragma warning restore 612, 618
