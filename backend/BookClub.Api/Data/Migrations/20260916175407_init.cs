@@ -106,7 +106,8 @@ namespace BookClub.Api.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_ReadingLogs_UserId_BookId_Date",
                 table: "ReadingLogs",
-                columns: new[] { "UserId", "BookId", "Date" });
+                columns: new[] { "UserId", "BookId", "Date" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReadingProgresses_BookId",
@@ -114,9 +115,9 @@ namespace BookClub.Api.Migrations
                 column: "BookId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ReadingProgresses_UserId_BookId_DateRead",
+                name: "IX_ReadingProgresses_UserId_BookId",
                 table: "ReadingProgresses",
-                columns: new[] { "UserId", "BookId", "DateRead" },
+                columns: new[] { "UserId", "BookId" },
                 unique: true);
         }
 
