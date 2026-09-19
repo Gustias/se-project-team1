@@ -1,8 +1,11 @@
+using BookClub.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
 builder.Services.AddScoped<BookService>();
+builder.Services.AddScoped<ReadingProgressService>();
 
 builder.Services.AddCors(options =>
 {
