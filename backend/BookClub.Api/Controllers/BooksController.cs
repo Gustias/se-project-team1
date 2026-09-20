@@ -9,14 +9,18 @@ public class BooksController : ControllerBase
     {
         _bookService = bookService;
     }
+
     [HttpGet("search")]
-    public IActionResult Search([FromQuery] string q)
+    public async Task<IActionResult> Search(
+        [FromQuery] string q,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(q))
         {
             return BadRequest("Search query cannot be empty.");
         }
-        var books = _bookService.SearchBooks(q);
+
+        var books = await _bookService.SearchBooksAsync(q, cancellationToken);
         return Ok(books);
     }
 }

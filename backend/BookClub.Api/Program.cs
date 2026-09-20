@@ -2,7 +2,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddScoped<BookService>();
+builder.Services.AddHttpClient<BookService>(client =>
+{
+    client.BaseAddress = new Uri("https://openlibrary.org/");
+
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(
+        "BookClubApp");                 // Need to create & add project email
+});
 
 builder.Services.AddCors(options =>
 {
