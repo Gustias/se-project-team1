@@ -22,4 +22,4 @@ Content-Type: application/json
 }
 
 ### Delete it
-DELETE localhost:5027/api/reading-progress/2
+DELETE localhost:5027/api/reading-progress/1
