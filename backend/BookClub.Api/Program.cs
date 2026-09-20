@@ -1,9 +1,11 @@
+using BookClub.Api.Data;
 using BookClub.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+builder.Services.AddDbContext<AppDbContext>();
 builder.Services.AddScoped<BookService>();
 builder.Services.AddScoped<ReadingProgressService>();
 
