@@ -1,3 +1,4 @@
+using BookClub.Api.DTOs;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -19,4 +20,39 @@ public class BooksController : ControllerBase
         var books = _bookService.SearchBooks(q);
         return Ok(books);
     }
+    [HttpPost]
+    public async Task<IActionResult> CreateAsync(
+        CreateBookDto request)
+    {
+        var entry = await _bookService.CreateAsync(
+            request.ExternalId,
+            request.Isbn,
+            request.Title,
+            request.Author);
+        
+        if (entry is null)
+        {
+            return Conflict(new
+            {
+                message = "Error creating a book."
+            });
+        }
+        
+        return Created(
+            $"/api/books/{entry.ExternalId}",
+            entry);
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAsync(int id)
+    {
+        
+    }
+    
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetAsync(int id)
+    {
+        
+    }
+    
 }
