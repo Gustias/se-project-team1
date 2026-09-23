@@ -1,11 +1,9 @@
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using BookClub.Api.Models;
 
 public class BookService
 {
-    public readonly HttpClient _httpClient;
+    private readonly HttpClient _httpClient;
 
     public BookService(HttpClient httpClient)
     {
@@ -18,7 +16,7 @@ public class BookService
     {
         var encodedQuery = Uri.EscapeDataString(query);
 
-        var url = $"search.json?q={encodedQuery}&limit=50";
+        var url = $"search.json?q={encodedQuery}&limit=20";
 
         using var response = await _httpClient.GetAsync(url, cancellationToken);
 

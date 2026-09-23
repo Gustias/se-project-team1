@@ -1,0 +1,25 @@
+### Create a reading progress entry
+POST localhost:5027/api/reading-progress
+Content-Type: application/json
+
+{
+  "userId": 1,
+  "bookId": 1,
+  "progress": 10,
+  "chapter": 1
+}
+
+### Get the entry
+GET localhost:5027/api/reading-progress/2
+
+### Update its progress
+PUT localhost:5027/api/reading-progress/2
+Content-Type: application/json
+
+{
+  "progress": 50,
+  "chapter": 5
+}
+
+### Delete it
+DELETE localhost:5027/api/reading-progress/1

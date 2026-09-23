@@ -1,14 +1,22 @@
+using BookClub.Api.Data;
+using BookClub.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+
+builder.Services.AddDbContext<AppDbContext>();
 
 builder.Services.AddHttpClient<BookService>(client =>
 {
     client.BaseAddress = new Uri("https://openlibrary.org/");
 
     client.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "BookClubApp");                 // Need to create & add project email
+        "BookClubApp"
+    );
 });
+
+builder.Services.AddScoped<ReadingProgressService>();
 
 builder.Services.AddCors(options =>
 {

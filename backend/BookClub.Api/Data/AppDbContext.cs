@@ -35,6 +35,9 @@ public class AppDbContext : DbContext
                 rl.Date
             })
             .IsUnique();
+        modelBuilder.Entity<Book>()
+            .HasIndex(b => b.ExternalId)
+            .IsUnique();
     }
 
     public DbSet<Book> Books => Set<Book>();
