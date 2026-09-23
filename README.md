@@ -1,12 +1,12 @@
 # Book Club
 
-A web application for discovering books, tracking reading activity, organizing a personal reading library, and later participating in book clubs and reading-related events.
+A web application for discovering books, managing a personal reading library, tracking reading activity, and eventually participating in book clubs and reading-related events.
 
 This project is being developed as a university Software Engineering team project.
 
-## Project Goals
+## Core Scope
 
-The first development stage focuses on the core personal library functionality:
+The first development stage focuses on the main personal library flow:
 
 - Search for books
 - Add books to a **Want to Read** list
@@ -14,7 +14,7 @@ The first development stage focuses on the core personal library functionality:
 - Mark books as finished
 - Rate finished books from **1 to 5**
 
-Additional social and reading-tracking features are planned for later development.
+More advanced social and reading-tracking functionality will be developed after the core flow is stable.
 
 ## Current Development
 
@@ -28,6 +28,7 @@ The project currently includes:
 - React development CORS configuration
 - API documentation
 - Open Library book search integration in development
+- Pull Request based team workflow and code review
 
 ## Planned Features
 
@@ -87,9 +88,11 @@ Future features may include:
               └──────────────┘  └─────────────────┘
 ```
 
-The frontend communicates with the ASP.NET Core backend rather than directly with external APIs.
+The React frontend communicates with the ASP.NET Core backend.
 
-External API responses are mapped into the application's own DTOs before being returned to the frontend. This keeps the frontend independent from the raw Open Library response format.
+External API responses are mapped into application DTOs before being returned to the frontend. This keeps the frontend independent from the raw Open Library response format.
+
+For a more detailed explanation, see [Architecture](docs/architecture.md).
 
 ## Project Structure
 
@@ -102,34 +105,29 @@ se-project/
 │   └── BookClub.Api/
 │       ├── Controllers/
 │       │   └── API endpoints
-│       │
 │       ├── Services/
 │       │   └── Application and business logic
-│       │
 │       ├── DTOs/
 │       │   └── API data contracts
-│       │
 │       ├── Models/
 │       │   └── Database models
-│       │
 │       ├── Data/
 │       │   ├── AppDbContext
 │       │   └── EF Core migrations
-│       │
 │       └── Integrations/
 │           └── External API integrations
 │
 ├── docs/
-│   └── API documentation and project notes
+│   ├── api.md
+│   └── architecture.md
 │
+├── CONTRIBUTING.md
 └── README.md
 ```
 
 ## API
 
 ### Book Search
-
-Search for books by title:
 
 ```http
 GET /api/books/search?q=dune
@@ -140,27 +138,32 @@ Example response format:
 ```json
 [
   {
-    "externalId": "/works/OL893415W",
+    "externalId": "test-1",
     "title": "Dune",
     "author": "Frank Herbert",
-    "coverUrl": "https://covers.openlibrary.org/..."
+    "coverUrl": null
   }
 ]
 ```
 
-The frontend should depend on this response structure rather than the raw Open Library response.
+The frontend should depend on this backend response format rather than the raw Open Library response.
 
-More API documentation can be found in:
+### Reading Progress
 
 ```text
-docs/api.md
+POST   /api/reading-progress
+GET    /api/reading-progress/{id}
+PUT    /api/reading-progress/{id}
+DELETE /api/reading-progress/{id}
 ```
+
+Full endpoint documentation is available in [API Documentation](docs/api.md).
 
 ## Running the Project
 
 ### Requirements
 
-Make sure the following tools are installed:
+Install:
 
 - .NET 10 SDK
 - Node.js
@@ -187,6 +190,12 @@ Restore dependencies:
 
 ```bash
 dotnet restore
+```
+
+Build the project:
+
+```bash
+dotnet build
 ```
 
 Run the backend:
@@ -237,9 +246,7 @@ backend/BookClub.Api/Data/
 
 The database connection string is **not stored in the repository**.
 
-Each developer should configure it locally using .NET User Secrets.
-
-Example:
+Each developer should configure it locally using .NET User Secrets:
 
 ```bash
 dotnet user-secrets set "ConnectionStrings:ConnectionString" "<connection-string>"
@@ -247,40 +254,11 @@ dotnet user-secrets set "ConnectionStrings:ConnectionString" "<connection-string
 
 ## Git Workflow
 
-Development is done using branches and pull requests.
+Development is done through branches and Pull Requests.
 
 Direct pushes to `main` should be avoided.
 
-### Branch Naming
-
-Examples:
-
-```text
-feature/open-library-search
-feature/want-to-read
-fix/reading-progress-validation
-docs/update-readme
-refactor/book-service
-```
-
-Common branch prefixes:
-
-```text
-feature/
-fix/
-hotfix/
-refactor/
-chore/
-docs/
-test/
-release/
-ci/
-build/
-perf/
-style/
-```
-
-### Typical Workflow
+Typical workflow:
 
 ```bash
 git switch main
@@ -295,55 +273,35 @@ git commit -m "feat: add example feature"
 git push -u origin feature/example-feature
 ```
 
-Then create a Pull Request into `main`.
+Then create a Pull Request into `main`, review the changes, resolve feedback, and merge once the branch is ready.
+
+Examples of branch names:
 
 ```text
-main
-  │
-  └── feature branch
-          │
-          ├── commits
-          │
-          └── Pull Request
-                  │
-                  ├── code review
-                  └── merge into main
+feature/open-library-search
+feature/want-to-read
+fix/reading-progress-validation
+docs/update-readme
+refactor/book-service
 ```
 
-## Pull Request Guidelines
-
-Before merging a Pull Request:
-
-- Make sure the project builds successfully
-- Review the changed files
-- Test the affected functionality
-- Resolve review comments
-- Avoid committing secrets or database passwords
-- Keep API contracts consistent
-- Prefer DTOs instead of exposing database entities directly
-
-Backend build check:
-
-```bash
-cd backend/BookClub.Api
-dotnet build
-```
+Detailed contribution rules are available in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Documentation
 
-Project documentation is stored in:
+| Document | Description |
+|---|---|
+| [API Documentation](docs/api.md) | Backend endpoints, request bodies, responses, and status codes |
+| [Architecture](docs/architecture.md) | High-level application structure and responsibilities |
+| [Contributing](CONTRIBUTING.md) | Branch naming, commits, Pull Requests, and code review workflow |
 
-```text
-docs/
-```
+Documentation should be updated whenever API contracts, setup requirements, architecture decisions, or team workflow change.
 
-Current documentation includes API contracts and development notes.
+## Team Workflow
 
-## Team
+The project is developed by a four-person Software Engineering team.
 
-Developed by a four-person university Software Engineering team.
-
-Team responsibilities are split across:
+Responsibilities are split across:
 
 - Frontend development
 - Backend development
@@ -351,6 +309,15 @@ Team responsibilities are split across:
 - External API integration
 
 Code is integrated through GitHub Pull Requests and peer review.
+
+Before merging a Pull Request:
+
+- make sure the project builds;
+- test the affected functionality;
+- review the changed files;
+- resolve review comments;
+- avoid committing secrets;
+- update documentation when required.
 
 ## Development Status
 
