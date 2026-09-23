@@ -7,27 +7,29 @@ namespace BookClub.Api.Services;
 
 public class ReadingProgressService
 {
-    private AppDbContext _dbContext;
+    private readonly AppDbContext _dbContext;
+
     public ReadingProgressService(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }
-    
-    public async Task<ReadingProgress> CreateAsync(int userId, int bookId,
-        int progress, int? chapter)
-    {
 
+    public async Task<GetReadingProgressDto?> CreateAsync(
+        int userId,
+        int bookId,
+        int progress,
+        int? chapter)
+    {
         var existing = await _dbContext.ReadingProgresses
-            .FirstOrDefaultAsync(rp => rp.UserId == userId && rp.BookId == bookId);
+            .FirstOrDefaultAsync(rp =>
+                rp.UserId == userId &&
+                rp.BookId == bookId);
 
         if (existing is not null)
         {
-            existing.Progress = progress;
-            existing.Chapter = chapter;
-            await _dbContext.SaveChangesAsync();
-            return existing;
+            return null;
         }
-        
+
         var entry = new ReadingProgress
         {
             UserId = userId,
@@ -39,14 +41,17 @@ public class ReadingProgressService
 
         _dbContext.ReadingProgresses.Add(entry);
         await _dbContext.SaveChangesAsync();
-        
-        return entry;
+
+        return ToDto(entry);
     }
-    
-    public async Task<ReadingProgress?> UpdateAsync(int id,
-        int progress, int? chapter)
+
+    public async Task<GetReadingProgressDto?> UpdateAsync(
+        int id,
+        int progress,
+        int? chapter)
     {
         var existing = await _dbContext.ReadingProgresses.FindAsync(id);
+
         if (existing is null)
         {
             return null;
@@ -54,42 +59,49 @@ public class ReadingProgressService
 
         existing.Progress = progress;
         existing.Chapter = chapter;
-        await _dbContext.SaveChangesAsync();
-        return existing;
 
+        await _dbContext.SaveChangesAsync();
+
+        return ToDto(existing);
     }
 
-    public async Task<ReadingProgress?> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id)
     {
         var existing = await _dbContext.ReadingProgresses.FindAsync(id);
+
         if (existing is null)
         {
-            return null;
+            return false;
         }
 
         _dbContext.ReadingProgresses.Remove(existing);
         await _dbContext.SaveChangesAsync();
-        return existing;
+
+        return true;
     }
 
     public async Task<GetReadingProgressDto?> GetAsync(int id)
     {
         var existing = await _dbContext.ReadingProgresses.FindAsync(id);
+
         if (existing is null)
         {
             return null;
         }
 
-        GetReadingProgressDto entry = new GetReadingProgressDto
+        return ToDto(existing);
+    }
+
+    private static GetReadingProgressDto ToDto(ReadingProgress entry)
+    {
+        return new GetReadingProgressDto
         {
-            Id = existing.Id,
-            BookId = existing.BookId,
-            UserId = existing.UserId,
-            Progress = existing.Progress,
-            Chapter = existing.Chapter,
-            DateRead = existing.DateRead
+            Id = entry.Id,
+            UserId = entry.UserId,
+            BookId = entry.BookId,
+            Progress = entry.Progress,
+            Chapter = entry.Chapter,
+            DateRead = entry.DateRead
         };
-        
-        return entry;
     }
 }
