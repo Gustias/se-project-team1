@@ -1,8 +1,8 @@
 # API Documentation
 
-This document describes the current backend API available in the `main` branch.
+This document describes the current Book Club backend API.
 
-> The local backend port may differ depending on the development environment.  
+> Local backend ports may differ by development environment.  
 > Examples below use `http://localhost:5027`.
 
 ## Base URL
@@ -11,7 +11,7 @@ This document describes the current backend API available in the `main` branch.
 http://localhost:5027
 ```
 
-During local development, CORS is enabled for the React development origin:
+During local development, CORS is enabled for:
 
 ```text
 http://localhost:5173
@@ -21,7 +21,7 @@ http://localhost:5173
 
 # Book Search
 
-Searches for books by title.
+Searches for books through Open Library.
 
 ## Endpoint
 
@@ -46,10 +46,10 @@ GET http://localhost:5027/api/books/search?q=dune
 ```json
 [
   {
-    "externalId": "test-1",
+    "externalId": "/works/OL...",
     "title": "Dune",
     "author": "Frank Herbert",
-    "coverUrl": null
+    "coverUrl": "https://covers.openlibrary.org/b/id/..."
   }
 ]
 ```
@@ -58,12 +58,25 @@ GET http://localhost:5027/api/books/search?q=dune
 
 | Field | Type | Description |
 |---|---|---|
-| `externalId` | string | External identifier of the book |
+| `externalId` | string | Open Library identifier returned by the backend |
 | `title` | string | Book title |
-| `author` | string | Book author or authors |
-| `coverUrl` | string or null | URL of the book cover |
+| `author` | string | One or more authors joined into a single string |
+| `coverUrl` | string or null | Open Library cover URL when available |
 
-## Errors
+## Behavior
+
+The backend:
+
+1. URL-encodes the search query.
+2. Requests Open Library search results.
+3. Requests up to 20 results.
+4. Filters out entries without a title.
+5. Maps the external response to `BookSearchResultDto`.
+6. Returns the normalized result to the frontend.
+
+The frontend should depend on this response format rather than the raw Open Library response.
+
+## Empty Query
 
 If `q` is empty or contains only whitespace:
 
@@ -77,7 +90,7 @@ Response:
 400 Bad Request
 ```
 
-Example response body:
+Response body:
 
 ```text
 Search query cannot be empty.
@@ -93,12 +106,6 @@ const response = await fetch(
 const books = await response.json();
 ```
 
-## Notes
-
-- The endpoint currently returns mock data in the `main` branch.
-- Open Library integration is being developed separately and will replace the mock implementation.
-- The frontend should rely on this API response format instead of the raw Open Library response format.
-
 ---
 
 # Reading Progress
@@ -111,13 +118,11 @@ Reading progress endpoints are available under:
 
 A reading progress entry belongs to one user and one book.
 
-The `progress` field must be between `0` and `100`.
+`progress` must be between `0` and `100`.
 
 ---
 
 ## Create Reading Progress
-
-Creates a new reading progress entry.
 
 ### Endpoint
 
@@ -140,12 +145,12 @@ POST /api/reading-progress
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `userId` | integer | Yes | ID of the user. Must be greater than `0` |
-| `bookId` | integer | Yes | ID of the book. Must be greater than `0` |
+| `userId` | integer | Yes | User ID. Must be greater than `0` |
+| `bookId` | integer | Yes | Book ID. Must be greater than `0` |
 | `progress` | integer | Yes | Reading progress from `0` to `100` |
 | `chapter` | integer or null | No | Current chapter |
 
-### Success Response
+### Success
 
 ```text
 201 Created
@@ -160,7 +165,7 @@ Example response:
   "bookId": 1,
   "progress": 10,
   "chapter": 1,
-  "dateRead": "2026-09-23"
+  "dateRead": "2026-09-24"
 }
 ```
 
@@ -168,13 +173,13 @@ Example response:
 
 Only one reading progress entry should exist for the same user and book.
 
-If an entry already exists:
+If one already exists:
 
 ```text
 409 Conflict
 ```
 
-Example response:
+Example:
 
 ```json
 {
@@ -182,9 +187,9 @@ Example response:
 }
 ```
 
-### Validation Errors
+### Validation Error
 
-Invalid IDs or progress values result in:
+Invalid IDs or progress values return:
 
 ```text
 400 Bad Request
@@ -194,21 +199,19 @@ Invalid IDs or progress values result in:
 
 ## Get Reading Progress
 
-Returns one reading progress entry by its ID.
-
 ### Endpoint
 
 ```http
 GET /api/reading-progress/{id}
 ```
 
-### Example Request
+### Example
 
 ```http
 GET http://localhost:5027/api/reading-progress/1
 ```
 
-### Success Response
+### Success
 
 ```text
 200 OK
@@ -223,13 +226,11 @@ Example response:
   "bookId": 1,
   "progress": 10,
   "chapter": 1,
-  "dateRead": "2026-09-23"
+  "dateRead": "2026-09-24"
 }
 ```
 
 ### Not Found
-
-If the entry does not exist:
 
 ```text
 404 Not Found
@@ -239,15 +240,13 @@ If the entry does not exist:
 
 ## Update Reading Progress
 
-Updates an existing reading progress entry.
-
 ### Endpoint
 
 ```http
 PUT /api/reading-progress/{id}
 ```
 
-### Example Request
+### Example
 
 ```http
 PUT http://localhost:5027/api/reading-progress/1
@@ -265,10 +264,10 @@ Content-Type: application/json
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `progress` | integer | Yes | Updated reading progress from `0` to `100` |
+| `progress` | integer | Yes | Updated progress from `0` to `100` |
 | `chapter` | integer or null | No | Updated chapter |
 
-### Success Response
+### Success
 
 ```text
 200 OK
@@ -283,21 +282,17 @@ Example response:
   "bookId": 1,
   "progress": 50,
   "chapter": 5,
-  "dateRead": "2026-09-23"
+  "dateRead": "2026-09-24"
 }
 ```
 
 ### Not Found
-
-If the entry does not exist:
 
 ```text
 404 Not Found
 ```
 
 ### Validation Error
-
-If `progress` is outside the allowed range:
 
 ```text
 400 Bad Request
@@ -307,21 +302,19 @@ If `progress` is outside the allowed range:
 
 ## Delete Reading Progress
 
-Deletes an existing reading progress entry.
-
 ### Endpoint
 
 ```http
 DELETE /api/reading-progress/{id}
 ```
 
-### Example Request
+### Example
 
 ```http
 DELETE http://localhost:5027/api/reading-progress/1
 ```
 
-### Success Response
+### Success
 
 ```text
 204 No Content
@@ -329,19 +322,17 @@ DELETE http://localhost:5027/api/reading-progress/1
 
 ### Not Found
 
-If the entry does not exist:
-
 ```text
 404 Not Found
 ```
 
 ---
 
-# Current Endpoint Summary
+# Endpoint Summary
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/books/search?q={query}` | Search for books |
+| `GET` | `/api/books/search?q={query}` | Search Open Library for books |
 | `POST` | `/api/reading-progress` | Create reading progress |
 | `GET` | `/api/reading-progress/{id}` | Get reading progress |
 | `PUT` | `/api/reading-progress/{id}` | Update reading progress |
@@ -349,9 +340,9 @@ If the entry does not exist:
 
 ---
 
-# Development Notes
+# Development Rules
 
+- Frontend code should communicate with the ASP.NET Core API rather than calling Open Library directly.
 - API responses should use DTOs instead of exposing EF Core entities directly.
-- Database credentials must not be committed to the repository.
-- The frontend should communicate with the ASP.NET Core API instead of directly calling external services.
-- When new endpoints are added or response contracts change, this file should be updated in the same Pull Request.
+- Database credentials must not be committed.
+- New or changed endpoints should update this document in the same Pull Request.

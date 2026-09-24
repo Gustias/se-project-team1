@@ -1,12 +1,10 @@
 # Book Club
 
-A web application for discovering books, managing a personal reading library, tracking reading activity, and eventually participating in book clubs and reading-related events.
+A university Software Engineering team project for discovering books, managing a personal reading library, and building toward social book-club features.
 
-This project is being developed as a university Software Engineering team project.
+## Current Scope
 
-## Core Scope
-
-The first development stage focuses on the main personal library flow:
+The first development stage focuses on the core personal-library flow:
 
 - Search for books
 - Add books to a **Want to Read** list
@@ -14,27 +12,24 @@ The first development stage focuses on the main personal library flow:
 - Mark books as finished
 - Rate finished books from **1 to 5**
 
-More advanced social and reading-tracking functionality will be developed after the core flow is stable.
+The backend already supports real book search through Open Library and reading-progress CRUD operations. The remaining first-stage work is focused on connecting the frontend and implementing the personal-library features above.
 
-## Current Development
+## Current Backend Features
 
-The project currently includes:
-
-- ASP.NET Core backend structure
-- REST API controllers, services, DTOs, and models
-- Entity Framework Core integration
+- ASP.NET Core REST API
+- Entity Framework Core
 - PostgreSQL database support
-- Reading progress API functionality
+- Neon-compatible database connection
+- Real Open Library book search
+- Reading progress create, read, update, and delete endpoints
+- DTO-based API responses
 - React development CORS configuration
-- API documentation
-- Open Library book search integration in development
-- Pull Request based team workflow and code review
+- .NET User Secrets for database credentials
 
 ## Planned Features
 
-Future features may include:
+Later development may include:
 
-- Reading progress tracking
 - Book clubs
 - Public and private clubs
 - Progress-based discussions
@@ -51,6 +46,8 @@ Future features may include:
 - Vite
 - JavaScript
 
+> The frontend application is still being integrated into the shared `main` branch.
+
 ### Backend
 
 - C#
@@ -63,9 +60,9 @@ Future features may include:
 - PostgreSQL
 - Neon
 
-### External APIs
+### External API
 
-- Open Library API
+- Open Library
 
 ## Architecture
 
@@ -88,34 +85,26 @@ Future features may include:
               └──────────────┘  └─────────────────┘
 ```
 
-The React frontend communicates with the ASP.NET Core backend.
+The frontend communicates with the ASP.NET Core backend instead of calling Open Library directly.
 
 External API responses are mapped into application DTOs before being returned to the frontend. This keeps the frontend independent from the raw Open Library response format.
 
-For a more detailed explanation, see [Architecture](docs/architecture.md).
+For more detail, see [Architecture](docs/architecture.md).
 
 ## Project Structure
 
 ```text
 se-project/
-├── frontend/
-│   └── React / Vite application
-│
 ├── backend/
 │   └── BookClub.Api/
 │       ├── Controllers/
-│       │   └── API endpoints
 │       ├── Services/
-│       │   └── Application and business logic
 │       ├── DTOs/
-│       │   └── API data contracts
 │       ├── Models/
-│       │   └── Database models
 │       ├── Data/
-│       │   ├── AppDbContext
-│       │   └── EF Core migrations
 │       └── Integrations/
-│           └── External API integrations
+│
+├── frontend/
 │
 ├── docs/
 │   ├── api.md
@@ -133,20 +122,22 @@ se-project/
 GET /api/books/search?q=dune
 ```
 
-Example response format:
+The backend requests matching books from Open Library and returns the application's own response format.
+
+Example:
 
 ```json
 [
   {
-    "externalId": "test-1",
+    "externalId": "/works/OL...",
     "title": "Dune",
     "author": "Frank Herbert",
-    "coverUrl": null
+    "coverUrl": "https://covers.openlibrary.org/b/id/..."
   }
 ]
 ```
 
-The frontend should depend on this backend response format rather than the raw Open Library response.
+The search currently requests up to 20 results.
 
 ### Reading Progress
 
@@ -157,22 +148,20 @@ PUT    /api/reading-progress/{id}
 DELETE /api/reading-progress/{id}
 ```
 
-Full endpoint documentation is available in [API Documentation](docs/api.md).
+Full API documentation is available in [docs/api.md](docs/api.md).
 
-## Running the Project
+## Running the Backend
 
 ### Requirements
 
 Install:
 
 - .NET 10 SDK
-- Node.js
-- npm
 - Git
 
-A PostgreSQL-compatible database connection is also required for database functionality.
+A PostgreSQL-compatible database connection is required for database functionality.
 
-### Backend
+### Configure the Database Connection
 
 Navigate to the backend project:
 
@@ -180,77 +169,53 @@ Navigate to the backend project:
 cd backend/BookClub.Api
 ```
 
-Configure the database connection string using .NET User Secrets:
+Set the connection string using .NET User Secrets:
 
 ```bash
 dotnet user-secrets set "ConnectionStrings:ConnectionString" "<your-connection-string>"
 ```
 
-Restore dependencies:
+The connection string must not be committed to the repository.
+
+### Restore, Build, and Run
 
 ```bash
 dotnet restore
-```
-
-Build the project:
-
-```bash
 dotnet build
-```
-
-Run the backend:
-
-```bash
 dotnet run
 ```
 
-The backend development URL may differ depending on the local environment.
+The local ASP.NET Core port may differ depending on the environment.
 
-### Frontend
+## Running the Frontend
 
-Navigate to the frontend directory:
+When the React/Vite application is available in the shared repository:
 
 ```bash
 cd frontend
-```
-
-Install dependencies:
-
-```bash
 npm install
-```
-
-Start the development server:
-
-```bash
 npm run dev
 ```
 
-The React development server normally runs on:
+The development frontend is expected to run on:
 
 ```text
 http://localhost:5173
 ```
 
-The backend CORS policy allows requests from this development origin.
+The backend CORS policy allows requests from this origin.
 
 ## Database
 
-The backend uses Entity Framework Core with PostgreSQL.
-
-Database-related code is located in:
+Database code is located in:
 
 ```text
 backend/BookClub.Api/Data/
 ```
 
-The database connection string is **not stored in the repository**.
+The project uses Entity Framework Core with PostgreSQL.
 
-Each developer should configure it locally using .NET User Secrets:
-
-```bash
-dotnet user-secrets set "ConnectionStrings:ConnectionString" "<connection-string>"
-```
+Application-specific data belongs in the database. The project does not copy the complete Open Library catalog into PostgreSQL.
 
 ## Git Workflow
 
@@ -263,10 +228,9 @@ Typical workflow:
 ```bash
 git switch main
 git pull
-
 git switch -c feature/example-feature
 
-# Make changes
+# make changes
 
 git add .
 git commit -m "feat: add example feature"
@@ -275,31 +239,31 @@ git push -u origin feature/example-feature
 
 Then create a Pull Request into `main`, review the changes, resolve feedback, and merge once the branch is ready.
 
-Examples of branch names:
+Examples:
 
 ```text
 feature/open-library-search
 feature/want-to-read
 fix/reading-progress-validation
-docs/update-readme
+docs/update-api-documentation
 refactor/book-service
 ```
 
-Detailed contribution rules are available in [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the full team workflow.
 
 ## Documentation
 
 | Document | Description |
 |---|---|
-| [API Documentation](docs/api.md) | Backend endpoints, request bodies, responses, and status codes |
+| [API Documentation](docs/api.md) | Endpoints, request bodies, responses, and status codes |
 | [Architecture](docs/architecture.md) | High-level application structure and responsibilities |
-| [Contributing](CONTRIBUTING.md) | Branch naming, commits, Pull Requests, and code review workflow |
+| [Contributing](CONTRIBUTING.md) | Branches, commits, Pull Requests, and review workflow |
 
-Documentation should be updated whenever API contracts, setup requirements, architecture decisions, or team workflow change.
+Documentation should be updated in the same Pull Request whenever API contracts, setup requirements, or architecture change.
 
-## Team Workflow
+## Team
 
-The project is developed by a four-person Software Engineering team.
+Developed by a four-person Software Engineering team.
 
 Responsibilities are split across:
 
@@ -308,31 +272,20 @@ Responsibilities are split across:
 - Database development
 - External API integration
 
-Code is integrated through GitHub Pull Requests and peer review.
-
-Before merging a Pull Request:
-
-- make sure the project builds;
-- test the affected functionality;
-- review the changed files;
-- resolve review comments;
-- avoid committing secrets;
-- update documentation when required.
+Code is integrated through Pull Requests and peer review.
 
 ## Development Status
 
-The application is under active development.
-
-The current priority is completing the first end-to-end flow:
+Current priority:
 
 ```text
-Book Search
-    ↓
+Search for a book
+        ↓
 Add to Want to Read
-    ↓
+        ↓
 Mark as Finished
-    ↓
-Rate Book
+        ↓
+Rate the book
 ```
 
-More advanced book club, social, statistics, and event functionality will be developed after the core application flow is stable.
+The backend foundation is in place. The next major milestone is completing the first end-to-end frontend-to-backend flow and the personal-library features.
