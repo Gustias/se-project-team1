@@ -1,5 +1,8 @@
 using BookClub.Api.DTOs;
+using BookClub.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+
+namespace BookClub.Api.Controllers;
 
 [ApiController]
 [Route("api/books")]
@@ -38,21 +41,33 @@ public class BooksController : ControllerBase
             });
         }
         
-        return Created(
-            $"/api/books/{entry.ExternalId}",
-            entry);
+        return CreatedAtAction(nameof(GetAsync), new { id = entry.Id}, entry);
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsync(int id)
     {
-        
+        var deleted = await _bookService.DeleteAsync(id);
+
+        if (!deleted)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
     }
     
     [HttpGet("{id}")]
     public async Task<IActionResult> GetAsync(int id)
     {
-        
+        var entry = await _bookService.GetAsync(id);
+
+        if (entry is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(entry);
     }
     
 }
