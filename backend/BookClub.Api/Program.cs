@@ -5,13 +5,24 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+<<<<<<< HEAD
+=======
+builder.Services.AddDbContext<AppDbContext>();
+
+>>>>>>> 64cfb316cc62c3702457920a9a1aff462f5be0a1
 builder.Services.AddHttpClient<BookService>(client =>
 {
     client.BaseAddress = new Uri("https://openlibrary.org/");
 
     client.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "BookClubApp");                 // Need to create & add project email
+        "BookClubApp"
+    );
 });
+<<<<<<< HEAD
+=======
+
+builder.Services.AddScoped<ReadingProgressService>();
+>>>>>>> 64cfb316cc62c3702457920a9a1aff462f5be0a1
 
 builder.Services.AddCors(options =>
 {
