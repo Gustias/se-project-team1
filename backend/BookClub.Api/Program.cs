@@ -5,6 +5,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+builder.Services.AddDbContext<AppDbContext>();
+builder.Services.AddScoped<BookService>();
+builder.Services.AddScoped<ReadingProgressService>();
+
 builder.Services.AddHttpClient<BookService>(client =>
 {
     client.BaseAddress = new Uri("https://openlibrary.org/");
