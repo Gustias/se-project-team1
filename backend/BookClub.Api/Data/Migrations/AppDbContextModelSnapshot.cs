@@ -46,6 +46,9 @@ namespace BookClub.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ExternalId")
+                        .IsUnique();
+
                     b.ToTable("Books");
                 });
 

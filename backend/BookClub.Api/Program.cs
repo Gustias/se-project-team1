@@ -1,3 +1,6 @@
+using BookClub.Api.Data;
+using BookClub.Api.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
