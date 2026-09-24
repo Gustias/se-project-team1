@@ -4,7 +4,7 @@ This document describes the current high-level architecture of the Book Club app
 
 ## Overview
 
-The application follows a client-server architecture.
+The application uses a client-server architecture.
 
 ```text
                  ┌─────────────────────┐
@@ -25,33 +25,36 @@ The application follows a client-server architecture.
               └──────────────┘  └─────────────────┘
 ```
 
-The React frontend communicates with the ASP.NET Core backend.
+The frontend communicates with the ASP.NET Core backend.
 
-The frontend should not call Open Library directly. External API communication is handled by the backend so the application controls its own API contract.
+The backend is responsible for:
+
+- exposing the application's REST API;
+- validating requests;
+- coordinating application logic;
+- accessing PostgreSQL through Entity Framework Core;
+- calling Open Library;
+- mapping external data into application DTOs.
 
 ## Frontend
 
-Technology:
+Planned/current frontend technology:
 
 ```text
 React
+Vite
+JavaScript
 ```
 
 Responsibilities:
 
 - render the user interface;
 - collect user input;
-- call backend API endpoints;
+- call backend endpoints;
 - display loading and error states;
 - display normalized backend responses.
 
-Example request:
-
-```http
-GET /api/books/search?q=dune
-```
-
-The frontend depends on the response format defined by our backend, not the raw Open Library JSON structure.
+The frontend should not depend directly on Open Library response structures.
 
 ## Backend
 
@@ -63,9 +66,7 @@ ASP.NET Core
 .NET 10
 ```
 
-The backend exposes REST endpoints and coordinates application logic.
-
-Current backend structure:
+Current structure:
 
 ```text
 backend/BookClub.Api/
@@ -77,46 +78,50 @@ backend/BookClub.Api/
 └── Integrations/
 ```
 
-### Controllers
+## Controllers
 
-Controllers handle HTTP requests and responses.
+Controllers define HTTP endpoints and translate service results into HTTP responses.
 
-Their responsibilities should remain small:
+Example:
 
 ```text
-Request
-   ↓
-Validation / routing
-   ↓
-Service call
-   ↓
+HTTP request
+    ↓
+Controller
+    ↓
+Service
+    ↓
 HTTP response
 ```
 
-Controllers should not contain large amounts of business or database logic.
-
-Examples:
+Current examples:
 
 ```text
 BooksController
 ReadingProgressController
 ```
 
-### Services
+Controllers should remain small and should not contain database or external API implementation details.
 
-Services contain application logic and coordinate database or external API operations.
+## Services
 
-Example:
+Services contain application logic and coordinate dependencies.
+
+### Book Search
 
 ```text
 BooksController
       ↓
 BookService
       ↓
+HttpClient
+      ↓
 Open Library
 ```
 
-Another example:
+`BookService` performs the Open Library request and maps results into `BookSearchResultDto`.
+
+### Reading Progress
 
 ```text
 ReadingProgressController
@@ -124,32 +129,38 @@ ReadingProgressController
 ReadingProgressService
           ↓
 AppDbContext
+          ↓
+PostgreSQL
 ```
 
-### DTOs
+## DTOs
 
-DTOs define the data contract exposed by the API.
+DTOs define the public API contract.
 
-Example book search response:
+Example:
 
 ```json
 {
-  "externalId": "/works/OL893415W",
+  "externalId": "/works/OL...",
   "title": "Dune",
   "author": "Frank Herbert",
-  "coverUrl": "https://covers.openlibrary.org/..."
+  "coverUrl": "https://covers.openlibrary.org/b/id/..."
 }
 ```
 
-DTOs allow the backend to control its API independently from database models and external APIs.
+The backend should expose DTOs instead of raw EF Core entities or raw Open Library objects.
 
-The frontend should consume DTOs rather than EF Core entities or raw Open Library responses.
+This keeps the API contract independent from:
 
-### Models
+- database schema changes;
+- Open Library schema changes;
+- internal implementation details.
+
+## Models
 
 Models represent application/database entities.
 
-Examples include:
+Current examples include:
 
 ```text
 Book
@@ -158,11 +169,11 @@ ReadingProgress
 ReadingLog
 ```
 
-Database models should not automatically become public API response models.
+Database models should not automatically be used as public API response models.
 
-### Data Layer
+## Data Layer
 
-Entity Framework Core is used to communicate with PostgreSQL.
+Entity Framework Core is used for database access.
 
 Main component:
 
@@ -172,43 +183,33 @@ AppDbContext
 
 The data layer contains:
 
-- `DbContext`;
-- entity configuration;
-- database constraints;
+- DbContext configuration;
+- database entity sets;
+- indexes and constraints;
 - EF Core migrations.
 
-Database credentials are not stored in Git.
+The database is PostgreSQL-compatible and can be hosted using Neon.
 
-## Database
+## Database Responsibilities
 
-Technology:
-
-```text
-PostgreSQL
-Neon
-Entity Framework Core
-```
-
-Application-specific information belongs in the database.
+The application database stores project-specific state.
 
 Examples:
 
 - users;
 - books referenced by the application;
 - reading progress;
-- reading state;
-- ratings;
-- future club membership and activity.
+- future personal-library state;
+- future ratings;
+- future club membership.
 
-The project should not attempt to copy the complete Open Library catalog into PostgreSQL.
-
-External book information may be stored only when required by application functionality.
+The complete Open Library catalog should not be copied into PostgreSQL.
 
 ## Open Library Integration
 
 Open Library provides external book catalog data.
 
-Expected flow:
+Current flow:
 
 ```text
 React
@@ -221,7 +222,7 @@ BookService
   ↓
 HttpClient
   ↓
-Open Library
+Open Library Search API
   ↓
 Open Library JSON
   ↓
@@ -230,18 +231,21 @@ BookSearchResultDto
 React
 ```
 
-This separation provides several benefits:
+Current search behavior:
 
-- the frontend is independent from Open Library response changes;
-- external API details stay in the backend;
-- validation and error handling can be centralized;
-- another book provider could be introduced later without rewriting the frontend.
+- the query is URL-encoded;
+- up to 20 results are requested;
+- entries without titles are filtered out;
+- authors are joined into one string;
+- cover IDs are mapped to Open Library cover URLs.
+
+The frontend never needs to understand the raw Open Library response.
 
 ## Dependency Injection
 
-ASP.NET Core dependency injection is used to provide services to controllers.
+ASP.NET Core dependency injection provides dependencies to controllers and services.
 
-Example conceptually:
+Conceptually:
 
 ```text
 BooksController
@@ -257,9 +261,7 @@ ReadingProgressService
 AppDbContext
 ```
 
-Services must be registered in `Program.cs`.
-
-For HTTP integrations, typed `HttpClient` registration should be preferred.
+`BookService` is registered as a typed `HttpClient`.
 
 Example:
 
@@ -268,6 +270,18 @@ builder.Services.AddHttpClient<BookService>(client =>
 {
     client.BaseAddress = new Uri("https://openlibrary.org/");
 });
+```
+
+Database and application services are registered in `Program.cs`.
+
+## Configuration and Secrets
+
+Database credentials must not be committed to Git.
+
+Developers configure the database connection locally with .NET User Secrets:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:ConnectionString" "<connection-string>"
 ```
 
 ## CORS
@@ -281,13 +295,9 @@ Backend: local ASP.NET Core port
 
 Because these are different origins, the backend enables CORS for the React development origin.
 
-The development policy should allow only the frontend origins required by the project instead of using unrestricted origins unnecessarily.
-
 ## API Design
 
-Endpoints should follow consistent REST-style conventions.
-
-Examples:
+Current endpoints:
 
 ```text
 GET    /api/books/search?q=dune
@@ -298,7 +308,7 @@ PUT    /api/reading-progress/{id}
 DELETE /api/reading-progress/{id}
 ```
 
-Common response codes:
+Common HTTP status codes currently used:
 
 ```text
 200 OK
@@ -315,9 +325,9 @@ Detailed endpoint contracts are documented in:
 docs/api.md
 ```
 
-## Current Core Flow
+## Current Product Flow
 
-The first lab focuses on a small end-to-end product flow:
+The first development stage is focused on:
 
 ```text
 Search for a book
@@ -329,21 +339,23 @@ Mark as Finished
 Rate the book
 ```
 
-The architecture should prioritize completing this flow before adding more advanced functionality.
+Reading progress and Open Library integration already provide part of the backend foundation.
+
+The next architecture work should prioritize completing this end-to-end flow before introducing more advanced social functionality.
 
 ## Future Architecture
 
-Later features may introduce additional services and models for:
+Later features may introduce:
 
-- book clubs;
-- club membership;
+- book club services;
+- membership models;
 - discussions;
 - spoiler-safe comments;
-- reading statistics;
+- statistics;
 - events;
 - map integration.
 
-These features should reuse the same general layering:
+New features should continue using the same general layering:
 
 ```text
 Controller
@@ -353,4 +365,4 @@ Service
 Database / External Integration
 ```
 
-The architecture should remain simple until additional complexity is actually required.
+The architecture should remain as simple as possible until additional complexity is required.

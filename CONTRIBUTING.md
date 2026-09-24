@@ -2,31 +2,31 @@
 
 This project is developed by a four-person Software Engineering team.
 
-To keep the repository stable and easy to review, all changes should be made through branches and Pull Requests.
+All significant changes should be made through branches and Pull Requests.
 
-## Workflow
+## Basic Workflow
 
-Start from the latest `main` branch:
+Start from the latest `main`:
 
 ```bash
 git switch main
 git pull
 ```
 
-Create a new branch:
+Create a branch:
 
 ```bash
 git switch -c feature/example-feature
 ```
 
-Make your changes, then commit them:
+Make and commit changes:
 
 ```bash
 git add .
 git commit -m "feat: add example feature"
 ```
 
-Push the branch:
+Push:
 
 ```bash
 git push -u origin feature/example-feature
@@ -38,28 +38,28 @@ Direct pushes to `main` should be avoided.
 
 ## Branch Naming
 
-Use the following format:
+Format:
 
 ```text
 <type>/<short-description>
 ```
 
-Supported branch types:
+Supported prefixes:
 
-| Type | Usage |
+| Prefix | Purpose |
 |---|---|
 | `feature/` | New functionality |
 | `fix/` | Bug fixes |
 | `hotfix/` | Urgent fixes |
-| `refactor/` | Code restructuring without changing behavior |
-| `chore/` | Project setup or maintenance |
-| `docs/` | Documentation changes |
+| `refactor/` | Internal restructuring |
+| `chore/` | Maintenance or project cleanup |
+| `docs/` | Documentation |
 | `test/` | Tests |
 | `release/` | Release preparation |
-| `ci/` | CI configuration |
-| `build/` | Build system or dependencies |
+| `ci/` | CI changes |
+| `build/` | Build or dependency changes |
 | `perf/` | Performance improvements |
-| `style/` | Formatting or style-only changes |
+| `style/` | Formatting-only changes |
 
 Examples:
 
@@ -67,13 +67,11 @@ Examples:
 feature/open-library-search
 feature/want-to-read
 fix/reading-progress-validation
+chore/project-cleanup
 docs/update-api-documentation
-refactor/book-service
 ```
 
 ## Commit Messages
-
-Use short, descriptive commit messages.
 
 Recommended format:
 
@@ -85,10 +83,10 @@ Examples:
 
 ```text
 feat: add book search endpoint
-fix: validate reading progress IDs
+fix: resolve backend integration conflict
 docs: update API documentation
 refactor: simplify book service
-chore: set up initial project structure
+chore: remove duplicate documentation
 ```
 
 Keep commits focused on one logical change when possible.
@@ -106,20 +104,20 @@ Adds Open Library book search integration.
 
 ## Changes
 
-- replaces mock book search data
-- adds HttpClient integration
-- maps Open Library responses to BookSearchResultDto
-- keeps the frontend API contract unchanged
+- replaces mock search data
+- integrates Open Library through HttpClient
+- maps external results to BookSearchResultDto
+- preserves the frontend API contract
 ```
 
 Before requesting review:
 
-- make sure the project builds;
+- build the affected project;
 - test the affected functionality;
-- review your own changed files;
+- review your own diff;
 - remove temporary/debug code;
-- do not commit secrets or database passwords;
-- update documentation when API contracts change.
+- do not commit secrets;
+- update documentation when API behavior changes.
 
 Backend build check:
 
@@ -130,77 +128,81 @@ dotnet build
 
 ## Code Review
 
-Reviewers should focus on functionality, maintainability, API consistency, validation, and integration with existing code.
+Reviewers should focus on:
 
-Useful review questions include:
+- correctness;
+- integration with the latest `main`;
+- maintainability;
+- API consistency;
+- input validation;
+- HTTP status codes;
+- database behavior;
+- secret handling;
+- whether another team member can run the code.
 
-- Does this change work with the latest `main` branch?
-- Are request and response contracts consistent?
-- Are DTOs used instead of exposing database entities directly?
-- Are invalid inputs handled correctly?
-- Are appropriate HTTP status codes returned?
-- Are secrets kept outside the repository?
-- Will another team member be able to run and use this code?
-- Does documentation need to be updated?
+Useful questions:
 
-Small style issues should not block a Pull Request unless they affect readability or consistency.
+- Does this branch include the latest important changes from `main`?
+- Does the project build?
+- Are DTOs used instead of exposing database entities?
+- Are invalid inputs handled?
+- Are external API details kept inside the backend?
+- Does documentation match the actual implementation?
 
-## Resolving Review Feedback
+Avoid blocking a Pull Request for purely cosmetic issues unless readability or consistency is affected.
 
-When review feedback is addressed:
+## Shared Branches
 
-1. Make the requested changes.
-2. Commit them to the same feature branch.
-3. Push the commits.
-4. Resolve the related review conversations once the issue is actually fixed.
+If another team member needs to help with an existing Pull Request branch, they may create commits on top of that branch and push them to the same remote branch when the team agrees.
 
-If another team member needs to contribute directly to an existing Pull Request branch, they may create commits on top of that branch and push them to the same remote branch, provided the team agrees.
+Before doing this:
 
-Avoid force-pushing shared branches unless absolutely necessary.
+```bash
+git fetch origin
+```
+
+Avoid force-pushing shared branches.
+
+If a push is rejected as non-fast-forward, fetch and integrate the remote changes instead of using `--force`.
 
 ## Keeping a Branch Updated
 
-Before merging a long-running branch, update it with the latest `main`:
+For a long-running branch:
 
 ```bash
 git fetch origin
 git merge origin/main
 ```
 
-Resolve conflicts carefully and verify that functionality from both branches remains intact.
+Resolve conflicts carefully.
 
-Do not use `--force` to solve a normal merge conflict.
+After resolving a conflict:
 
-## Repository Structure
-
-```text
-frontend/
-    React frontend
-
-backend/BookClub.Api/
-    Controllers/     HTTP endpoints
-    Services/        Application logic
-    DTOs/            API contracts
-    Models/          Database models
-    Data/            EF Core and database configuration
-    Integrations/    External API integrations
-
-docs/
-    Project and API documentation
+```bash
+git add <resolved-files>
+git commit
 ```
 
-Keep new code in the appropriate layer rather than placing unrelated logic in controllers or other arbitrary folders.
+Never commit unresolved conflict markers such as:
 
-## Secrets and Configuration
+```text
+<<<<<<<
+=======
+>>>>>>>
+```
+
+Always run a build after resolving backend conflicts.
+
+## Secrets
 
 Never commit:
 
 - database passwords;
 - API keys;
 - private connection strings;
-- `.env` files containing secrets.
+- secret `.env` files.
 
-The backend database connection string should be configured using .NET User Secrets:
+Database connection strings should be configured with .NET User Secrets:
 
 ```bash
 dotnet user-secrets set "ConnectionStrings:ConnectionString" "<connection-string>"
@@ -208,15 +210,7 @@ dotnet user-secrets set "ConnectionStrings:ConnectionString" "<connection-string
 
 ## Documentation
 
-Update documentation when introducing or changing:
-
-- API endpoints;
-- request/response formats;
-- setup requirements;
-- architecture decisions;
-- developer workflow.
-
-Main documentation files:
+Current documentation:
 
 ```text
 README.md
@@ -224,3 +218,13 @@ CONTRIBUTING.md
 docs/api.md
 docs/architecture.md
 ```
+
+Do not keep duplicate copies of the same documentation in multiple locations.
+
+Update documentation in the same Pull Request when changing:
+
+- endpoints;
+- request/response contracts;
+- setup requirements;
+- architecture decisions;
+- development workflow.
