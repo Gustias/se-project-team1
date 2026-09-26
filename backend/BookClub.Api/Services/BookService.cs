@@ -51,9 +51,7 @@ public class BookService
                 CoverUrl = book.CoverI.HasValue
                     ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-S.jpg"
                     : null
-            })
-
-            .ToList();
+            }).ToList();
     }
 
     private class OpenLibrarySearchResponse

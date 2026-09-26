@@ -9,6 +9,15 @@ builder.Services.AddDbContext<AppDbContext>();
 builder.Services.AddScoped<BookService>();
 builder.Services.AddScoped<ReadingProgressService>();
 
+builder.Services.AddHttpClient<BookService>(client =>
+{
+    client.BaseAddress = new Uri("https://openlibrary.org/");
+
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(
+        "BookClubApp"
+    );
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactApp", policy =>
