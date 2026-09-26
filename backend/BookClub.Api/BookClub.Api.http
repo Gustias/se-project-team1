@@ -1,3 +1,4 @@
+### ReadingProgress
 ### Create a reading progress entry
 POST localhost:5027/api/reading-progress
 Content-Type: application/json
@@ -23,3 +24,22 @@ Content-Type: application/json
 
 ### Delete it
 DELETE localhost:5027/api/reading-progress/1
+
+### Books
+
+### Create book
+POST localhost:5027/api/books
+Content-Type: application/json
+
+{
+  "ExternalId": "OL19283920",
+  "Isbn": "9780575068568",
+  "Title": "Dune",
+  "Author": "Frank Herbert"
+}
+
+### Delete book
+DELETE localhost:5027/api/books/1
+
+### Get book
+GET localhost:5027/api/books/2
