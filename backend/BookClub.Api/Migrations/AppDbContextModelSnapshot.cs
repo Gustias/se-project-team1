@@ -37,7 +37,10 @@ namespace BookClub.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Isbn")
+                    b.Property<string>("Isbn10")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Isbn13")
                         .HasColumnType("text");
 
                     b.Property<string>("Title")
@@ -93,11 +96,11 @@ namespace BookClub.Api.Migrations
                     b.Property<int>("BookId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("Chapter")
-                        .HasColumnType("integer");
-
                     b.Property<DateOnly>("DateRead")
                         .HasColumnType("date");
+
+                    b.Property<string>("LastChapterRead")
+                        .HasColumnType("text");
 
                     b.Property<int>("Progress")
                         .HasColumnType("integer");

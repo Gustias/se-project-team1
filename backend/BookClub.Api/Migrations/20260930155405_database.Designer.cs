@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BookClub.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260920091105_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20260930155405_database")]
+    partial class database
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -40,7 +40,10 @@ namespace BookClub.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Isbn")
+                    b.Property<string>("Isbn10")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Isbn13")
                         .HasColumnType("text");
 
                     b.Property<string>("Title")
@@ -96,11 +99,11 @@ namespace BookClub.Api.Migrations
                     b.Property<int>("BookId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("Chapter")
-                        .HasColumnType("integer");
-
                     b.Property<DateOnly>("DateRead")
                         .HasColumnType("date");
+
+                    b.Property<string>("LastChapterRead")
+                        .HasColumnType("text");
 
                     b.Property<int>("Progress")
                         .HasColumnType("integer");

@@ -1,25 +1,45 @@
+### ReadingProgress
 ### Create a reading progress entry
 POST localhost:5027/api/reading-progress
 Content-Type: application/json
 
 {
   "userId": 1,
-  "bookId": 1,
+  "bookId": 3,
   "progress": 10,
-  "chapter": 1
+  "LastChapterRead": "1"
 }
 
 ### Get the entry
 GET localhost:5027/api/reading-progress/2
 
 ### Update its progress
-PUT localhost:5027/api/reading-progress/2
+PUT localhost:5027/api/reading-progress/1
 Content-Type: application/json
 
 {
   "progress": 50,
-  "chapter": 5
+  "LastChapterRead": "5"
 }
 
 ### Delete it
 DELETE localhost:5027/api/reading-progress/1
+
+### Books
+
+### Create book
+POST localhost:5027/api/books
+Content-Type: application/json
+
+{
+  "ExternalId": "OL19283920",
+  "Isbn10": "9780575068568",
+  "Title": "Dune",
+  "Author": "Frank Herbert"
+}
+
+### Delete book
+DELETE localhost:5027/api/books/2
+
+### Get book
+GET localhost:5027/api/books/2

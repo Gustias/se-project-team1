@@ -24,7 +24,7 @@ public class ReadingProgressController : ControllerBase
             request.UserId,
             request.BookId,
             request.Progress,
-            request.Chapter);
+            request.LastChapterRead);
 
         if (entry is null)
         {
@@ -48,7 +48,7 @@ public class ReadingProgressController : ControllerBase
         var updated = await _readingProgressService.UpdateAsync(
             id,
             request.Progress,
-            request.Chapter);
+            request.LastChapterRead);
 
         if (updated is null)
         {
