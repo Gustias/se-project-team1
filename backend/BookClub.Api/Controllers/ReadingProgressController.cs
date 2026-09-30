@@ -22,7 +22,7 @@ public class ReadingProgressController : ControllerBase
     {
         var entry = await _readingProgressService.CreateAsync(
             request.UserId,
-            request.BookId,
+            request.ExternalBookId,
             request.Progress,
             request.Chapter);
 
