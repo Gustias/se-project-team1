@@ -1,6 +1,6 @@
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5027";
+export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-async function handle(response) 
+export async function handle(response) 
 {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
