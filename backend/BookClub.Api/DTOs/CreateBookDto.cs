@@ -7,7 +7,9 @@ public class CreateBookDto
     [Required(AllowEmptyStrings = false), MaxLength(100)]
     public required string ExternalId { get; set; }
     [MaxLength(20)]
-    public string? Isbn { get; set; }
+    public string? Isbn10 { get; set; }
+    [MaxLength(20)]
+    public string? Isbn13 { get; set; }
     [Required(AllowEmptyStrings = false), MaxLength(500)]
     public required string Title { get; set; }
     [MaxLength(200)]

@@ -12,6 +12,7 @@ public class CreateReadingProgressDto
 
     [Range(0, 100)]
     public int Progress { get; set; }
-
-    public int? Chapter { get; set; }
+    
+    [MaxLength(200)]
+    public String? LastChapterRead { get; set; }
 }

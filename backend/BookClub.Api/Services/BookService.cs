@@ -77,7 +77,8 @@ public class BookService
 
     public async Task<GetBookDto?> CreateAsync(
         string externalId,
-        string? isbn,
+        string? isbn10,
+        string? isbn13,
         string title,
         string? author)
     {
@@ -93,7 +94,8 @@ public class BookService
         var entry = new Book
         {
             ExternalId = externalId,
-            Isbn = isbn,
+            Isbn10 = isbn10,
+            Isbn13 = isbn13,
             Title = title,
             Author = author
         };
@@ -101,7 +103,7 @@ public class BookService
         _dbContext.Books.Add(entry);
         await _dbContext.SaveChangesAsync();
 
-        return ToDto(entry); // change later
+        return ToDto(entry);
         
     }
 
@@ -138,7 +140,8 @@ public class BookService
         {
             Id = entry.Id,
             ExternalId = entry.ExternalId,
-            Isbn = entry.Isbn,
+            Isbn10 = entry.Isbn10,
+            Isbn13 = entry.Isbn13,
             Title = entry.Title,
             Author = entry.Author
         };

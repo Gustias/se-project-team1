@@ -33,7 +33,8 @@ public class BooksController : ControllerBase
     {
         var entry = await _bookService.CreateAsync(
             request.ExternalId,
-            request.Isbn,
+            request.Isbn10,
+            request.Isbn13,
             request.Title,
             request.Author);
         
@@ -45,7 +46,7 @@ public class BooksController : ControllerBase
             });
         }
         
-        return CreatedAtAction(nameof(GetAsync), new { id = entry.Id}, entry);
+        return CreatedAtAction(nameof(Get), new { id = entry.Id}, entry);
     }
 
     [HttpDelete("{id}")]
@@ -62,7 +63,7 @@ public class BooksController : ControllerBase
     }
     
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetAsync(int id)
+    public async Task<IActionResult> Get(int id)
     {
         var entry = await _bookService.GetAsync(id);
 

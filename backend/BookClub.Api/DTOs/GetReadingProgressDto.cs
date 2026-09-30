@@ -6,6 +6,6 @@ public class GetReadingProgressDto
     public required int UserId{ get; set; }
     public required int BookId{ get; set; }
     public int Progress{ get; set; }
-    public int? Chapter{ get; set; }
+    public String? LastChapterRead{ get; set; }
     public DateOnly DateRead{ get; set; }
 }

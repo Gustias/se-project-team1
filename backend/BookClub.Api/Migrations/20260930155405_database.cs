@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BookClub.Api.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class database : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -18,7 +18,8 @@ namespace BookClub.Api.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Isbn = table.Column<string>(type: "text", nullable: true),
+                    Isbn10 = table.Column<string>(type: "text", nullable: true),
+                    Isbn13 = table.Column<string>(type: "text", nullable: true),
                     ExternalId = table.Column<string>(type: "text", nullable: false),
                     Title = table.Column<string>(type: "text", nullable: false),
                     Author = table.Column<string>(type: "text", nullable: true)
@@ -78,7 +79,7 @@ namespace BookClub.Api.Migrations
                     UserId = table.Column<int>(type: "integer", nullable: false),
                     BookId = table.Column<int>(type: "integer", nullable: false),
                     Progress = table.Column<int>(type: "integer", nullable: false),
-                    Chapter = table.Column<int>(type: "integer", nullable: true),
+                    LastChapterRead = table.Column<string>(type: "text", nullable: true),
                     DateRead = table.Column<DateOnly>(type: "date", nullable: false)
                 },
                 constraints: table =>
