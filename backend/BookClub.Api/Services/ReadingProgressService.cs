@@ -16,14 +16,15 @@ public class ReadingProgressService
 
     public async Task<GetReadingProgressDto?> CreateAsync(
         int userId,
-        string externalId,
+        int bookId,
         int progress,
         int? chapter)
     {
-        var book = await _dbContext.Books.FirstOrDefaultAsync(b => b.ExternalId == externalId); 
-        if (book is null) 
-        { 
-            return null; 
+        var book = await _dbContext.Books.FindAsync(bookId);
+        
+        if (book is null)
+        {
+            return null;
         }
 
         var existing = await _dbContext.ReadingProgresses

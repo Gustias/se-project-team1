@@ -1,3 +1,5 @@
+import { createBook } from "./api";
+
 const STORAGE_KEY = "bookclub:library";
 
 function readAll() {
@@ -25,9 +27,18 @@ export function isInLibrary(externalId) {
   return Boolean(readAll()[externalId]);
 }
 
-export function addToWantToRead(book) {
+export async function addToWantToRead(book) {
   const entries = readAll();
-  if (entries[book.externalId]) return entries[book.externalId];
+  if (entries[book.externalId]) 
+    return entries[book.externalId];
+  
+  // Save book to the backend first 
+  const savedBook = await createBook({ 
+    externalId: book.externalId, 
+    title: book.title, author: 
+    book.author, 
+  });
+  
   const entry = {
     externalId: book.externalId,
     title: book.title,
@@ -44,7 +55,8 @@ export function addToWantToRead(book) {
 
 export function markFinished(externalId) {
   const entries = readAll();
-  if (!entries[externalId]) return null;
+  if (!entries[externalId]) 
+    return null;
   entries[externalId] = { ...entries[externalId], status: "finished" };
   writeAll(entries);
   return entries[externalId];

@@ -1,6 +1,7 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5027";
 
-async function handle(response) {
+async function handle(response) 
+{
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try {
@@ -21,11 +22,28 @@ export async function searchBooks(query, signal) {
   return handle(response);
 }
 
-export async function createReadingProgress({ userId, externalId, progress, chapter }) {
+export async function createBook({ externalId, isbn10, isbn13, title, author, }) { 
+  const response = await fetch(`${BASE_URL}/api/books`, { 
+    method: "POST", headers: { "Content-Type": "application/json" }, 
+    body: JSON.stringify({ externalId, isbn10, isbn13, title, author, }), 
+  }); return handle(response); 
+} 
+
+export async function getBook(id) { 
+  const response = await fetch(`${BASE_URL}/api/books/${id}`); 
+  return handle(response); 
+} 
+
+export async function deleteBook(id) { 
+  const response = await fetch(`${BASE_URL}/api/books/${id}`, { method: "DELETE", }); 
+  return handle(response); 
+}
+
+export async function createReadingProgress({ userId, bookId, progress, chapter }) {
   const response = await fetch(`${BASE_URL}/api/reading-progress`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, externalId, progress, chapter: chapter ?? null }),
+    body: JSON.stringify({ userId, bookId, progress, chapter: chapter ?? null }),
   });
   return handle(response);
 }
