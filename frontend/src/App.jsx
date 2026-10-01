@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import * as api from "./api/index.js";
+import { client } from "./api/index.js";
 
 function App() {
   useEffect(() => {
-    api.searchBooks("dune")
+    client.searchBooks("dune")
       .then((books) => {
         console.log(books);
       })

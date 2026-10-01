@@ -19,6 +19,11 @@ export async function handle(response)
 export async function searchBooks(query, signal) {
   const url = `${BASE_URL}/api/books/search?q=${encodeURIComponent(query)}`;
   const response = await fetch(url, { signal });
+  
+  console.log("API URL:", url);
+  console.log("Status:", response.status);
+  console.log("Content-Type:", response.headers.get("content-type"));
+  
   return handle(response);
 }
 

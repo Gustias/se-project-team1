@@ -1,4 +1,4 @@
-import { createBook } from "./api";
+import { createBook } from "./client.js";
 
 const STORAGE_KEY = "bookclub:library";
 
@@ -33,7 +33,7 @@ export async function addToWantToRead(book) {
     return entries[book.externalId];
   
   // Save book to the backend first 
-  const savedBook = await createBook({ 
+  await createBook({ 
     externalId: book.externalId, 
     title: book.title, author: 
     book.author, 
