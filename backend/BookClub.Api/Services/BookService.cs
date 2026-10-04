@@ -5,6 +5,7 @@ using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace BookClub.Api.Services;
 
@@ -23,11 +24,11 @@ public class BookService
         CancellationToken cancellationToken = default)
     {
         var normalizedQuery = query.Trim();
+        var escapedQuery = EscapeSearchQuery(normalizedQuery);
 
-        var searchQuery = $"title:{normalizedQuery} OR author:{normalizedQuery}";
+        var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
         var encodedQuery = Uri.EscapeDataString(searchQuery);
 
-        // Pasiimam daugiau, tada savo pusėje paliekam max 30 tikrų matchų
         var url = $"search.json?q={encodedQuery}&limit=100";
 
         using var response =
@@ -152,6 +153,14 @@ public class BookService
         }
 
         return ToDto(existing);
+    }
+
+    private static string EscapeSearchQuery(string query)
+    {
+        return Regex.Replace(
+            query,
+            @"(\+|-|&&|\|\||!|\(|\)|\{|\}|\[|\]|\^|""|~|\*|\?|:|\\|/)",
+            @"\$1");
     }
 
     private static GetBookDto ToDto(Book entry)
