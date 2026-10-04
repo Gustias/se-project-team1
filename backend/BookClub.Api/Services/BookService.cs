@@ -1,12 +1,13 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using BookClub.Api.Data;
 using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace BookClub.Api.Services;
+
 public class BookService
 {
     private readonly AppDbContext _dbContext;
@@ -16,7 +17,7 @@ public class BookService
         _dbContext = dbContext;
         _httpClient = httpClient;
     }
-    
+
     public async Task<List<BookSearchResultDto>> SearchBooksAsync(
         string query,
         CancellationToken cancellationToken = default)
@@ -123,7 +124,7 @@ public class BookService
         await _dbContext.SaveChangesAsync();
 
         return ToDto(entry);
-        
+
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -138,9 +139,9 @@ public class BookService
         _dbContext.Books.Remove(existing);
         await _dbContext.SaveChangesAsync();
 
-        return true;   
+        return true;
     }
-    
+
     public async Task<GetBookDto?> GetAsync(int id)
     {
         var existing = await _dbContext.Books.FindAsync(id);
@@ -152,7 +153,7 @@ public class BookService
 
         return ToDto(existing);
     }
-    
+
     private static GetBookDto ToDto(Book entry)
     {
         return new GetBookDto

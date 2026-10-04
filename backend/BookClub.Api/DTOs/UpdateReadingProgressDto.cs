@@ -8,7 +8,7 @@ public class UpdateReadingProgressDto
     [Range(0, 100)]
     public int Progress { get; set; }
     [MaxLength(200)]
-    public String? LastChapterRead { get; set; }
+    public string? LastChapterRead { get; set; }
     [EnumDataType(typeof(ReadingStatus))]
     public ReadingStatus Status { get; set; }
 }

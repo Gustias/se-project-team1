@@ -18,11 +18,11 @@ public class ReadingProgressService
         int userId,
         int bookId,
         int progress,
-        String? lastChapterRead,
+        string? lastChapterRead,
         ReadingStatus status)
     {
         var book = await _dbContext.Books.FindAsync(bookId);
-        
+
         if (book is null)
         {
             return null;

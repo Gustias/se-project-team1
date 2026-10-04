@@ -37,7 +37,7 @@ public class BooksController : ControllerBase
             request.Isbn13,
             request.Title,
             request.Author);
-        
+
         if (entry is null)
         {
             return Conflict(new
@@ -45,8 +45,8 @@ public class BooksController : ControllerBase
                 message = "Error creating a book."
             });
         }
-        
-        return CreatedAtAction(nameof(Get), new { id = entry.Id}, entry);
+
+        return CreatedAtAction(nameof(Get), new { id = entry.Id }, entry);
     }
 
     [HttpDelete("{id}")]
@@ -61,7 +61,7 @@ public class BooksController : ControllerBase
 
         return NoContent();
     }
-    
+
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
@@ -74,5 +74,5 @@ public class BooksController : ControllerBase
 
         return Ok(entry);
     }
-    
+
 }
