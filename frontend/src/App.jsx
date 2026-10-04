@@ -3,7 +3,8 @@ import { client } from "./api/index.js";
 
 function App() {
   useEffect(() => {
-    client.searchBooks("dune")
+    client
+      .searchBooks("dune")
       .then((books) => {
         console.log(books);
       })

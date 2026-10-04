@@ -1,7 +1,6 @@
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export async function handle(response) 
-{
+export async function handle(response) {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try {
@@ -19,36 +18,56 @@ export async function handle(response)
 export async function searchBooks(query, signal) {
   const url = `${BASE_URL}/api/books/search?q=${encodeURIComponent(query)}`;
   const response = await fetch(url, { signal });
-  
+
   console.log("API URL:", url);
   console.log("Status:", response.status);
   console.log("Content-Type:", response.headers.get("content-type"));
-  
+
   return handle(response);
 }
 
-export async function createBook({ externalId, isbn10, isbn13, title, author, }) { 
-  const response = await fetch(`${BASE_URL}/api/books`, { 
-    method: "POST", headers: { "Content-Type": "application/json" }, 
-    body: JSON.stringify({ externalId, isbn10, isbn13, title, author, }), 
-  }); return handle(response); 
-} 
-
-export async function getBook(id) { 
-  const response = await fetch(`${BASE_URL}/api/books/${id}`); 
-  return handle(response); 
-} 
-
-export async function deleteBook(id) { 
-  const response = await fetch(`${BASE_URL}/api/books/${id}`, { method: "DELETE", }); 
-  return handle(response); 
+export async function createBook({
+  externalId,
+  isbn10,
+  isbn13,
+  title,
+  author,
+}) {
+  const response = await fetch(`${BASE_URL}/api/books`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ externalId, isbn10, isbn13, title, author }),
+  });
+  return handle(response);
 }
 
-export async function createReadingProgress({ userId, bookId, progress, chapter }) {
+export async function getBook(id) {
+  const response = await fetch(`${BASE_URL}/api/books/${id}`);
+  return handle(response);
+}
+
+export async function deleteBook(id) {
+  const response = await fetch(`${BASE_URL}/api/books/${id}`, {
+    method: "DELETE",
+  });
+  return handle(response);
+}
+
+export async function createReadingProgress({
+  userId,
+  bookId,
+  progress,
+  chapter,
+}) {
   const response = await fetch(`${BASE_URL}/api/reading-progress`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, bookId, progress, chapter: chapter ?? null }),
+    body: JSON.stringify({
+      userId,
+      bookId,
+      progress,
+      chapter: chapter ?? null,
+    }),
   });
   return handle(response);
 }
