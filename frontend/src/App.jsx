@@ -1,18 +1,12 @@
-import { useEffect } from "react";
-import { client } from "./api/index.js";
+import BookSearch from "./components/BookSearch.jsx";
 
 function App() {
-  useEffect(() => {
-    client
-      .searchBooks("dune")
-      .then((books) => {
-        console.log(books);
-      })
-      .catch((error) => {
-        console.error(error);
-      });
-  }, []);
-  return <h1>Book Club</h1>;
+  return (
+    <main className="container">
+      <h1>Book Club</h1>
+      <BookSearch />
+    </main>
+  );
 }
 
 export default App;

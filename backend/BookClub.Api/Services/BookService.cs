@@ -1,12 +1,14 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using BookClub.Api.Data;
 using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 
 namespace BookClub.Api.Services;
+
 public class BookService
 {
     private readonly AppDbContext _dbContext;
@@ -16,31 +18,49 @@ public class BookService
         _dbContext = dbContext;
         _httpClient = httpClient;
     }
-    
+
     public async Task<List<BookSearchResultDto>> SearchBooksAsync(
-        string query, CancellationToken cancellationToken = default
-    )
+        string query,
+        CancellationToken cancellationToken = default)
     {
-        var encodedQuery = Uri.EscapeDataString(query);
+        var normalizedQuery = query.Trim();
+        var escapedQuery = EscapeSearchQuery(normalizedQuery);
 
-        var url = $"search.json?q={encodedQuery}&limit=20";
+        var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
+        var encodedQuery = Uri.EscapeDataString(searchQuery);
 
-        using var response = await _httpClient.GetAsync(url, cancellationToken);
+        var url = $"search.json?q={encodedQuery}&limit=100";
+
+        using var response =
+            await _httpClient.GetAsync(url, cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        await using var stream =
+            await response.Content.ReadAsStreamAsync(cancellationToken);
 
-        var openLibraryResponse = await JsonSerializer.DeserializeAsync<OpenLibrarySearchResponse>
-            (stream, cancellationToken: cancellationToken);
+        var openLibraryResponse =
+            await JsonSerializer.DeserializeAsync<OpenLibrarySearchResponse>(
+                stream,
+                cancellationToken: cancellationToken);
 
-        if(openLibraryResponse?.Docs == null)
+        if (openLibraryResponse?.Docs == null)
         {
             return new List<BookSearchResultDto>();
         }
 
         return openLibraryResponse.Docs
             .Where(book => !string.IsNullOrWhiteSpace(book.Title))
+            .Where(book =>
+                book.Title!.Contains(
+                    normalizedQuery,
+                    StringComparison.OrdinalIgnoreCase)
+                ||
+                (book.AuthorName?.Any(author =>
+                    author.Contains(
+                        normalizedQuery,
+                        StringComparison.OrdinalIgnoreCase)) ?? false))
+            .Take(30)
             .Select(book => new BookSearchResultDto
             {
                 ExternalId = book.Key ?? "",
@@ -49,9 +69,10 @@ public class BookService
                     ? string.Join(", ", book.AuthorName)
                     : "",
                 CoverUrl = book.CoverI.HasValue
-                    ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-S.jpg"
+                    ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-M.jpg"
                     : null
-            }).ToList();
+            })
+            .ToList();
     }
 
     private class OpenLibrarySearchResponse
@@ -104,7 +125,7 @@ public class BookService
         await _dbContext.SaveChangesAsync();
 
         return ToDto(entry);
-        
+
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -119,9 +140,9 @@ public class BookService
         _dbContext.Books.Remove(existing);
         await _dbContext.SaveChangesAsync();
 
-        return true;   
+        return true;
     }
-    
+
     public async Task<GetBookDto?> GetAsync(int id)
     {
         var existing = await _dbContext.Books.FindAsync(id);
@@ -133,7 +154,15 @@ public class BookService
 
         return ToDto(existing);
     }
-    
+
+    private static string EscapeSearchQuery(string query)
+    {
+        return Regex.Replace(
+            query,
+            @"(\+|-|&&|\|\||!|\(|\)|\{|\}|\[|\]|\^|""|~|\*|\?|:|\\|/)",
+            @"\$1");
+    }
+
     private static GetBookDto ToDto(Book entry)
     {
         return new GetBookDto
