@@ -18,7 +18,8 @@ public class ReadingProgressService
         int userId,
         int bookId,
         int progress,
-        String? lastChapterRead)
+        String? lastChapterRead,
+        ReadingStatus status)
     {
         var book = await _dbContext.Books.FindAsync(bookId);
         
@@ -43,7 +44,8 @@ public class ReadingProgressService
             BookId = bookId,
             Progress = progress,
             LastChapterRead = lastChapterRead,
-            DateRead = DateOnly.FromDateTime(DateTime.UtcNow)
+            DateRead = DateOnly.FromDateTime(DateTime.UtcNow),
+            Status = status
         };
 
         _dbContext.ReadingProgresses.Add(entry);
@@ -55,7 +57,8 @@ public class ReadingProgressService
     public async Task<GetReadingProgressDto?> UpdateAsync(
         int id,
         int progress,
-        String? chapter)
+        String? chapter,
+        ReadingStatus status)
     {
         var existing = await _dbContext.ReadingProgresses.FindAsync(id);
 
@@ -66,6 +69,7 @@ public class ReadingProgressService
 
         existing.Progress = progress;
         existing.LastChapterRead = chapter;
+        existing.Status = status;
 
         await _dbContext.SaveChangesAsync();
 
@@ -108,7 +112,8 @@ public class ReadingProgressService
             BookId = entry.BookId,
             Progress = entry.Progress,
             LastChapterRead = entry.LastChapterRead,
-            DateRead = entry.DateRead
+            DateRead = entry.DateRead,
+            Status = entry.Status
         };
     }
 }

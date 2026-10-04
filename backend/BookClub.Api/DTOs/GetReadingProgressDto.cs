@@ -1,3 +1,5 @@
+using BookClub.Api.Models;
+
 namespace BookClub.Api.DTOs;
 
 public class GetReadingProgressDto
@@ -7,5 +9,6 @@ public class GetReadingProgressDto
     public required int BookId{ get; set; }
     public int Progress{ get; set; }
     public String? LastChapterRead{ get; set; }
-    public DateOnly DateRead{ get; set; }
+    public DateOnly? DateRead{ get; set; }
+    public ReadingStatus Status { get; set; }
 }

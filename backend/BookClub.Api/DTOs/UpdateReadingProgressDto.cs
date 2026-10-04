@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using BookClub.Api.Models;
 
 namespace BookClub.Api.DTOs;
 
@@ -8,4 +9,6 @@ public class UpdateReadingProgressDto
     public int Progress { get; set; }
     [MaxLength(200)]
     public String? LastChapterRead { get; set; }
+    [EnumDataType(typeof(ReadingStatus))]
+    public ReadingStatus Status { get; set; }
 }

@@ -2,6 +2,12 @@ import { createBook } from "./client.js";
 
 const STORAGE_KEY = "bookclub:library";
 
+const ReadingStatus = Object.freeze({
+  Reading: 0,
+  Read: 1,
+  WantToRead: 2,
+});
+
 function readAll() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -43,7 +49,7 @@ export async function addToWantToRead(book) {
     title: book.title,
     author: book.author,
     coverUrl: book.coverUrl,
-    status: "want",
+    status: ReadingStatus.WantToRead,
     rating: null,
     addedAt: Date.now(),
   };
@@ -55,7 +61,7 @@ export async function addToWantToRead(book) {
 export function markFinished(externalId) {
   const entries = readAll();
   if (!entries[externalId]) return null;
-  entries[externalId] = { ...entries[externalId], status: "finished" };
+  entries[externalId] = { ...entries[externalId], status: ReadingStatus.Read };
   writeAll(entries);
   return entries[externalId];
 }
@@ -63,7 +69,7 @@ export function markFinished(externalId) {
 export function markWantToRead(externalId) {
   const entries = readAll();
   if (!entries[externalId]) return null;
-  entries[externalId] = { ...entries[externalId], status: "want" };
+  entries[externalId] = { ...entries[externalId], status: ReadingStatus.WantToRead };
   writeAll(entries);
   return entries[externalId];
 }

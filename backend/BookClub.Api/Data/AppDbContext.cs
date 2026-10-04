@@ -38,6 +38,11 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Book>()
             .HasIndex(b => b.ExternalId)
             .IsUnique();
+
+        modelBuilder.Entity<ReadingProgress>()
+            .Property(p => p.Status)
+            .HasConversion<string>()
+            .HasMaxLength(20);
     }
 
     public DbSet<Book> Books => Set<Book>();

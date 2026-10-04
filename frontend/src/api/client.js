@@ -57,7 +57,8 @@ export async function createReadingProgress({
   userId,
   bookId,
   progress,
-  chapter,
+  lastChapterRead,
+  status,
 }) {
   const response = await fetch(`${BASE_URL}/api/reading-progress`, {
     method: "POST",
@@ -66,7 +67,8 @@ export async function createReadingProgress({
       userId,
       bookId,
       progress,
-      chapter: chapter ?? null,
+      lastChapterRead: lastChapterRead ?? null,
+      status,
     }),
   });
   return handle(response);
