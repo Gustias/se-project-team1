@@ -30,7 +30,7 @@ public class ReadingProgressService
         var existing = await _dbContext.ReadingProgresses
             .FirstOrDefaultAsync(rp =>
                 rp.UserId == userId &&
-                rp.BookId == book.Id);
+                rp.BookId == bookId);
 
         if (existing is not null)
         {
@@ -40,7 +40,7 @@ public class ReadingProgressService
         var entry = new ReadingProgress
         {
             UserId = userId,
-            BookId = book.Id,
+            BookId = bookId,
             Progress = progress,
             Chapter = chapter,
             DateRead = DateOnly.FromDateTime(DateTime.UtcNow)
