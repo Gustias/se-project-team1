@@ -18,29 +18,47 @@ public class BookService
     }
     
     public async Task<List<BookSearchResultDto>> SearchBooksAsync(
-        string query, CancellationToken cancellationToken = default
-    )
+        string query,
+        CancellationToken cancellationToken = default)
     {
-        var encodedQuery = Uri.EscapeDataString(query);
+        var normalizedQuery = query.Trim();
 
-        var url = $"search.json?q={encodedQuery}&limit=20";
+        var searchQuery = $"title:{normalizedQuery} OR author:{normalizedQuery}";
+        var encodedQuery = Uri.EscapeDataString(searchQuery);
 
-        using var response = await _httpClient.GetAsync(url, cancellationToken);
+        // Pasiimam daugiau, tada savo pusėje paliekam max 30 tikrų matchų
+        var url = $"search.json?q={encodedQuery}&limit=100";
+
+        using var response =
+            await _httpClient.GetAsync(url, cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
+        await using var stream =
+            await response.Content.ReadAsStreamAsync(cancellationToken);
 
-        var openLibraryResponse = await JsonSerializer.DeserializeAsync<OpenLibrarySearchResponse>
-            (stream, cancellationToken: cancellationToken);
+        var openLibraryResponse =
+            await JsonSerializer.DeserializeAsync<OpenLibrarySearchResponse>(
+                stream,
+                cancellationToken: cancellationToken);
 
-        if(openLibraryResponse?.Docs == null)
+        if (openLibraryResponse?.Docs == null)
         {
             return new List<BookSearchResultDto>();
         }
 
         return openLibraryResponse.Docs
             .Where(book => !string.IsNullOrWhiteSpace(book.Title))
+            .Where(book =>
+                book.Title!.Contains(
+                    normalizedQuery,
+                    StringComparison.OrdinalIgnoreCase)
+                ||
+                (book.AuthorName?.Any(author =>
+                    author.Contains(
+                        normalizedQuery,
+                        StringComparison.OrdinalIgnoreCase)) ?? false))
+            .Take(30)
             .Select(book => new BookSearchResultDto
             {
                 ExternalId = book.Key ?? "",
@@ -49,9 +67,10 @@ public class BookService
                     ? string.Join(", ", book.AuthorName)
                     : "",
                 CoverUrl = book.CoverI.HasValue
-                    ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-S.jpg"
+                    ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-M.jpg"
                     : null
-            }).ToList();
+            })
+            .ToList();
     }
 
     private class OpenLibrarySearchResponse
