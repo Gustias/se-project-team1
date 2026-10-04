@@ -20,6 +20,7 @@ function App() {
       setBooks(results);
     } catch (err) {
       setError(err.message);
+      setBooks([]);
     } finally {
       setLoading(false);
     }
@@ -37,11 +38,16 @@ function App() {
           onChange={(event) => setQuery(event.target.value)}
         />
 
-        <button type="submit">Search</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "Searching..." : "Search"}
+        </button>
       </form>
 
-      {loading && <p>Searching...</p>}
       {error && <p className="error">{error}</p>}
+
+      {!loading && !error && query && books.length === 0 && (
+        <p>No books found.</p>
+      )}
 
       <section className="books">
         {books.map((book) => (
