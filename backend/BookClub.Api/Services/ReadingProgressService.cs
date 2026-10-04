@@ -20,6 +20,13 @@ public class ReadingProgressService
         int progress,
         String? lastChapterRead)
     {
+        var book = await _dbContext.Books.FindAsync(bookId);
+        
+        if (book is null)
+        {
+            return null;
+        }
+
         var existing = await _dbContext.ReadingProgresses
             .FirstOrDefaultAsync(rp =>
                 rp.UserId == userId &&
