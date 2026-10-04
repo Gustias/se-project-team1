@@ -5,21 +5,23 @@ Content-Type: application/json
 
 {
   "userId": 1,
-  "bookId": 3,
+  "bookId": 1,
   "progress": 10,
-  "LastChapterRead": "1"
+  "LastChapterRead": "1",
+  "Status" : 1
 }
 
 ### Get the entry
 GET localhost:5027/api/reading-progress/2
 
 ### Update its progress
-PUT localhost:5027/api/reading-progress/1
+PUT localhost:5027/api/reading-progress/2
 Content-Type: application/json
 
 {
   "progress": 50,
-  "LastChapterRead": "5"
+  "LastChapterRead": "5",
+  "Status": 0
 }
 
 ### Delete it
@@ -42,4 +44,4 @@ Content-Type: application/json
 DELETE localhost:5027/api/books/2
 
 ### Get book
-GET localhost:5027/api/books/2
+GET localhost:5027/api/books/1
