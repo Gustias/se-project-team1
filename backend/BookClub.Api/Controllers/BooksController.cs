@@ -24,7 +24,15 @@ public class BooksController : ControllerBase
             return BadRequest("Search query cannot be empty.");
         }
 
-        var books = await _bookService.SearchBooksAsync(q, cancellationToken);
+        var query = q.Trim();
+
+        if (query.Length > 100)
+        {
+            return BadRequest("Search query must be 100 characters or fewer.");
+        }
+
+        var books = await _bookService.SearchBooksAsync(query, cancellationToken);
+
         return Ok(books);
     }
     [HttpPost]

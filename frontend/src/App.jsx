@@ -10,13 +10,15 @@ function App() {
   async function handleSearch(event) {
     event.preventDefault();
 
-    if (!query.trim()) return;
+    const trimmedQuery = query.trim();
+
+    if (!trimmedQuery) return;
 
     setLoading(true);
     setError("");
 
     try {
-      const results = await client.searchBooks(query);
+      const results = await client.searchBooks(trimmedQuery);
       setBooks(results);
     } catch (err) {
       setError(err.message);
@@ -35,6 +37,7 @@ function App() {
           type="text"
           placeholder="Search by title or author..."
           value={query}
+          maxLength={100}
           onChange={(event) => setQuery(event.target.value)}
         />
 
