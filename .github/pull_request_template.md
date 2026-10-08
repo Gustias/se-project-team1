@@ -55,7 +55,7 @@ Closes #
 ## Checklist
 
 - [ ] The project builds successfully.
-- [ ] I tested the affected functionality.
+- [ ] I ran the relevant build, tests, or manual checks for these changes.
 - [ ] I reviewed my own changes.
 - [ ] I did not commit secrets or temporary/debug code.
 - [ ] Documentation was updated if necessary.
