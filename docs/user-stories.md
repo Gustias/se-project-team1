@@ -164,6 +164,7 @@ As a user, I want to record how many pages of a book I have read so that I can t
 - The user can enter the number of pages they have read.
 - The application stores the current reading progress.
 - The user can update their progress later.
+- The user can optionally record the last chapter they have read.
 - The number of pages read cannot be negative.
 - The number of pages read cannot exceed the total number of pages in the book.
 
