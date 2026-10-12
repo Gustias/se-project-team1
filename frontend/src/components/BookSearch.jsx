@@ -3,6 +3,7 @@ import { client } from "../api/index.js";
 
 function BookSearch() {
   const [query, setQuery] = useState("");
+  const [searchedQuery, setSearchedQuery] = useState("");
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -13,7 +14,7 @@ function BookSearch() {
     const trimmedQuery = query.trim();
 
     if (!trimmedQuery) return;
-
+    setSearchedQuery(trimmedQuery);
     setLoading(true);
     setError("");
 
@@ -46,7 +47,7 @@ function BookSearch() {
 
       {error && <p className="error">{error}</p>}
 
-      {!loading && !error && query && books.length === 0 && (
+      {!loading && !error && searchedQuery && books.length === 0 && (
         <p>No books found.</p>
       )}
 
