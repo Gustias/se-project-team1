@@ -30,7 +30,7 @@ public class BookService
         var encodedQuery = Uri.EscapeDataString(searchQuery);
 
         var url = $"search.json?q={encodedQuery}&limit=100" +
-            "&fields=key,title,author_name,cover_i,first_publish_year,isbn";
+            "&fields=key,title,author_name,cover_i,first_publish_year,isbn,publisher";
 
         using var response =
             await _httpClient.GetAsync(url, cancellationToken);
@@ -78,7 +78,11 @@ public class BookService
                         : null,
                 Year = book.FirstPublishYear,
                 Isbn10 = isbn10,
-                Isbn13 = isbn13
+                Isbn13 = isbn13,
+                Publishers = (book.Publishers ?? new List<string>())
+                  .Distinct(StringComparer.OrdinalIgnoreCase)
+                  .Take(10)
+                  .ToList()
                 };
             })
             .ToList();
@@ -109,6 +113,9 @@ public class BookService
 
         [JsonPropertyName("isbn")]
         public List<string>? Isbn { get; set; }
+
+        [JsonPropertyName("publisher")]
+        public List<string>? Publishers { get; set; }
     }
 
     public async Task<GetBookDto?> CreateAsync(

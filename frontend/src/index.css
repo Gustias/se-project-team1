@@ -63,6 +63,18 @@ body {
   color: #666;
 }
 
+.details h3 {
+  font-size: 14px;
+  margin: 12px 0 4px;
+}
+
+.details ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  color: #666;
+}
+
 .error {
   color: red;
 }

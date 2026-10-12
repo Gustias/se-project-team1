@@ -7,4 +7,5 @@ public class BookSearchResultDto
     public int? Year { get; set; }
     public string? Isbn10 { get; set; }
     public string? Isbn13 { get; set; }
+    public List<string> Publishers { get; set; } = new();
 }

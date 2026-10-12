@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { client } from "../api/index.js";
+import BookCard from "./BookCard.jsx";
 
 function BookSearch() {
   const [query, setQuery] = useState("");
@@ -53,21 +54,7 @@ function BookSearch() {
 
       <section className="books">
         {books.map((book) => (
-          <article className="book-card" key={book.externalId}>
-            {book.coverUrl ? (
-              <img src={book.coverUrl} alt={book.title} />
-            ) : (
-              <div className="no-cover">No cover</div>
-            )}
-
-            <div>
-              <h2>{book.title}</h2>
-              <p>{book.author || "Unknown author"}</p>
-              {book.year && <p className="meta">First published: {book.year}</p>}
-              {book.isbn13 && <p className="meta">ISBN-13: {book.isbn13}</p>}
-              {/*book.isbn10 && <p className="meta">ISBN-10: {book.isbn10}</p>*/}
-            </div>
-          </article>
+          <BookCard key={book.externalId} book={book} />
         ))}
       </section>
     </>
