@@ -63,6 +63,9 @@ function BookSearch() {
             <div>
               <h2>{book.title}</h2>
               <p>{book.author || "Unknown author"}</p>
+              {book.year && <p className="meta">First published: {book.year}</p>}
+              {book.isbn13 && <p className="meta">ISBN-13: {book.isbn13}</p>}
+              {/*book.isbn10 && <p className="meta">ISBN-10: {book.isbn10}</p>*/}
             </div>
           </article>
         ))}

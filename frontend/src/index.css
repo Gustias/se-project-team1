@@ -58,6 +58,11 @@ body {
   font-size: 18px;
 }
 
+.meta {
+  font-size: 0.85rem;
+  color: #666;
+}
+
 .error {
   color: red;
 }
