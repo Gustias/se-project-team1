@@ -22,7 +22,7 @@ function BookCard({ book }) {
         <div className="no-cover">No cover</div>
       )}
 
-      <div>
+      <div classname="info">
         <h2>{book.title}</h2>
         <p>{book.author || "Unknown author"}</p>
         {book.year && <p className="meta">First published: {book.year}</p>}
@@ -39,8 +39,8 @@ function BookCard({ book }) {
             </button>
 
             {expanded && (
-              <div className="meta">
-                {book.isbn10 && <p>ISBN-10: {book.isbn10}</p>}
+              <div className="details">
+                {book.isbn10 && <p className="meta">ISBN-10: {book.isbn10}</p>}
 
                 {book.description && (
                   <p className="description">{book.description}</p>
