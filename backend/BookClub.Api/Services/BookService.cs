@@ -3,7 +3,6 @@ using System.Text.Json.Serialization;
 using BookClub.Api.Data;
 using BookClub.Api.DTOs;
 using BookClub.Api.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 
@@ -29,7 +28,11 @@ public class BookService
         var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
         var encodedQuery = Uri.EscapeDataString(searchQuery);
 
-        var url = $"search.json?q={encodedQuery}&limit=100";
+        var fields =
+            "key,title,author_name,cover_i,editions,editions.key," +
+            "editions.title,editions.cover_i,editions.isbn_10,editions.isbn_13";
+
+        var url = $"search.json?q={encodedQuery}&limit=100&fields={fields}";
 
         using var response =
             await _httpClient.GetAsync(url, cancellationToken);
@@ -49,8 +52,9 @@ public class BookService
             return new List<BookSearchResultDto>();
         }
 
-        return openLibraryResponse.Docs
+        var results = openLibraryResponse.Docs
             .Where(book => !string.IsNullOrWhiteSpace(book.Title))
+            .Where(book => !IsCollectionTitle(book.Title!))
             .Where(book =>
                 book.Title!.Contains(
                     normalizedQuery,
@@ -60,19 +64,34 @@ public class BookService
                     author.Contains(
                         normalizedQuery,
                         StringComparison.OrdinalIgnoreCase)) ?? false))
+            .Where(book => book.Editions?.Docs?.Any(edition =>
+                !string.IsNullOrWhiteSpace(edition.Key)) == true)
+            .OrderByDescending(book =>
+                book.AuthorName?.Any(author =>
+                    author.Equals(
+                        normalizedQuery,
+                        StringComparison.OrdinalIgnoreCase)) == true)
             .Take(30)
-            .Select(book => new BookSearchResultDto
+            .Select(book =>
             {
-                ExternalId = book.Key ?? "",
-                Title = book.Title ?? "",
-                Author = book.AuthorName != null
-                    ? string.Join(", ", book.AuthorName)
-                    : "",
-                CoverUrl = book.CoverI.HasValue
-                    ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-M.jpg"
-                    : null
+                var edition = book.Editions!.Docs!
+                .First(edition => !string.IsNullOrWhiteSpace(edition.Key));
+
+                return new BookSearchResultDto
+                {
+                    ExternalId = edition.Key!,
+                    Title = book.Title ?? edition.Title ?? "",
+                    Author = book.AuthorName != null
+                        ? string.Join(", ", book.AuthorName)
+                        : "",
+                    CoverUrl = edition.CoverI.HasValue || book.CoverI.HasValue
+                        ? $"https://covers.openlibrary.org/b/id/{edition.CoverI ?? book.CoverI}-M.jpg"
+                        : null
+                };
             })
             .ToList();
+
+        return results;
     }
 
     private class OpenLibrarySearchResponse
@@ -94,6 +113,33 @@ public class BookService
 
         [JsonPropertyName("cover_i")]
         public int? CoverI { get; set; }
+
+        [JsonPropertyName("editions")]
+        public OpenLibraryEditions? Editions { get; set; }
+    }
+
+    private class OpenLibraryEditions
+    {
+        [JsonPropertyName("docs")]
+        public List<OpenLibraryEdition>? Docs { get; set; }
+    }
+
+    private class OpenLibraryEdition
+    {
+        [JsonPropertyName("key")]
+        public string? Key { get; set; }
+
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
+
+        [JsonPropertyName("cover_i")]
+        public int? CoverI { get; set; }
+
+        [JsonPropertyName("isbn_10")]
+        public List<string>? Isbn10 { get; set; }
+
+        [JsonPropertyName("isbn_13")]
+        public List<string>? Isbn13 { get; set; }
     }
 
     public async Task<GetBookDto?> CreateAsync(
@@ -155,6 +201,45 @@ public class BookService
         return ToDto(existing);
     }
 
+    private static bool IsCollectionTitle(string title)
+    {
+
+        var normalizedTitle = title.ToLowerInvariant();
+
+        var collectionIndicators = new[]
+        {
+            "complete series",
+            "complete collection",
+            "complete works",
+            "short stories",
+            "selected stories",
+            "summary of",
+            "study guide",
+            "collected works",
+            "collected edition",
+            "collected stories",
+            "omnibus",
+            "box set",
+            "boxed set",
+            "anthology",
+            "anthologies",
+            "novels by"
+        };
+
+        if (collectionIndicators.Any(indicator =>
+            normalizedTitle.Contains(indicator)))
+        {
+            return true;
+        }
+
+        if (title.Count(character => character == ',') >= 2)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
     private static string EscapeSearchQuery(string query)
     {
         return Regex.Replace(
@@ -175,6 +260,5 @@ public class BookService
             Author = entry.Author
         };
     }
-
 
 }
