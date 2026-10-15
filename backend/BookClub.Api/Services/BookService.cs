@@ -5,6 +5,8 @@ using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
+using System.Text;
+using System.Globalization;
 
 namespace BookClub.Api.Services;
 
@@ -23,14 +25,26 @@ public class BookService
         CancellationToken cancellationToken = default)
     {
         var normalizedQuery = query.Trim();
-        var escapedQuery = EscapeSearchQuery(normalizedQuery);
 
-        var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
-        var encodedQuery = Uri.EscapeDataString(searchQuery);
+        var searchTerms = normalizedQuery
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+        var escapedQuery = string.Join(
+            " AND ",
+            searchTerms
+                .SelectMany(term => new[]
+                {
+                    term,
+                    RemoveDiacritics(term)
+                })
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .Select(EscapeSearchQuery));
 
         var fields =
             "key,title,author_name,cover_i,editions,editions.key," +
             "editions.title,editions.cover_i,editions.isbn_10,editions.isbn_13";
+
+        var encodedQuery = Uri.EscapeDataString(escapedQuery);
 
         var url = $"search.json?q={encodedQuery}&limit=100&fields={fields}";
 
@@ -52,43 +66,94 @@ public class BookService
             return new List<BookSearchResultDto>();
         }
 
+        var normalizedTerms = searchTerms
+            .Select(RemoveDiacritics)
+            .ToList();
+
         var results = openLibraryResponse.Docs
             .Where(book => !string.IsNullOrWhiteSpace(book.Title))
             .Where(book => !IsCollectionTitle(book.Title!))
             .Where(book =>
-                book.Title!.Contains(
-                    normalizedQuery,
-                    StringComparison.OrdinalIgnoreCase)
-                ||
-                (book.AuthorName?.Any(author =>
-                    author.Contains(
-                        normalizedQuery,
-                        StringComparison.OrdinalIgnoreCase)) ?? false))
-            .Where(book => book.Editions?.Docs?.Any(edition =>
-                !string.IsNullOrWhiteSpace(edition.Key)) == true)
+            {
+                var title = RemoveDiacritics(book.Title!);
+
+                var authors = book.AuthorName?
+                    .Select(RemoveDiacritics)
+                    .ToList() ?? new List<string>();
+
+                var titleMatch = normalizedTerms.All(term =>
+                    title.Contains(term, StringComparison.OrdinalIgnoreCase));
+
+                var authorMatch = authors.Any(author =>
+                    normalizedTerms.All(term =>
+                        author.Contains(term, StringComparison.OrdinalIgnoreCase)));
+
+                var combinedMatch = normalizedTerms.Count > 1 &&
+                    normalizedTerms.All(term =>
+                        title.Contains(term, StringComparison.OrdinalIgnoreCase) ||
+                        authors.Any(author =>
+                            author.Contains(term, StringComparison.OrdinalIgnoreCase)));
+
+                return titleMatch || authorMatch || combinedMatch;
+            })
+
             .OrderByDescending(book =>
-                book.AuthorName?.Any(author =>
-                    author.Equals(
-                        normalizedQuery,
-                        StringComparison.OrdinalIgnoreCase)) == true)
+                string.Equals(
+                    book.Title?.Trim(),
+                    normalizedQuery,
+                    StringComparison.Ordinal))
+            .ThenByDescending(book =>
+                string.Equals(
+                    book.Title?.Trim(),
+                    normalizedQuery,
+                    StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(book =>
+                string.Equals(
+                   RemoveDiacritics(book.Title ?? ""),
+                   RemoveDiacritics(normalizedQuery),
+                   StringComparison.OrdinalIgnoreCase))
+            .ThenByDescending(book =>
+                book.CoverI.HasValue || book.Editions?.Docs?.Any(edition =>
+                    edition.CoverI.HasValue) == true)
+
             .Take(30)
             .Select(book =>
             {
-                var edition = book.Editions!.Docs!
-                .First(edition => !string.IsNullOrWhiteSpace(edition.Key));
+                var editions = book.Editions?.Docs ?? new List<OpenLibraryEdition>();
+
+                var edition = editions.FirstOrDefault(edition =>
+                    edition.CoverI.HasValue);
+
+                edition ??= editions.FirstOrDefault(edition =>
+                    !string.IsNullOrEmpty(edition.Key));
+
+                var externalId = edition?.Key ?? book.Key;
+
+                if (string.IsNullOrWhiteSpace(externalId))
+                {
+                    return null;
+                }
 
                 return new BookSearchResultDto
                 {
-                    ExternalId = edition.Key!,
-                    Title = book.Title ?? edition.Title ?? "",
+                    ExternalId = externalId,
+                    Title = book.Title ?? edition?.Title ?? "",
                     Author = book.AuthorName != null
                         ? string.Join(", ", book.AuthorName)
                         : "",
-                    CoverUrl = edition.CoverI.HasValue || book.CoverI.HasValue
-                        ? $"https://covers.openlibrary.org/b/id/{edition.CoverI ?? book.CoverI}-M.jpg"
+                    CoverUrl = edition?.CoverI.HasValue == true || book.CoverI.HasValue
+                        ? $"https://covers.openlibrary.org/b/id/{edition?.CoverI ?? book.CoverI}-M.jpg"
                         : null
                 };
             })
+            .Where(result => result != null)
+            .Select(result => result!)
+            .GroupBy(result => new
+            {
+                Title = RemoveDiacritics(result.Title).Trim().ToLowerInvariant(),
+                Author = RemoveDiacritics(result.Author).Trim().ToLowerInvariant()
+            })
+            .Select(group => group.First())
             .ToList();
 
         return results;
@@ -201,6 +266,18 @@ public class BookService
         return ToDto(existing);
     }
 
+    private static string RemoveDiacritics(string text)
+    {
+        var normalized = text.Normalize(NormalizationForm.FormD);
+
+        var characters = normalized
+            .Where(character =>
+                CharUnicodeInfo.GetUnicodeCategory(character)
+                != UnicodeCategory.NonSpacingMark);
+        return new string(characters.ToArray())
+            .Normalize(NormalizationForm.FormC);
+    }
+
     private static bool IsCollectionTitle(string title)
     {
 
@@ -238,6 +315,7 @@ public class BookService
         }
 
         return false;
+
     }
 
     private static string EscapeSearchQuery(string query)
