@@ -29,7 +29,8 @@ public class BookService
         var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
         var encodedQuery = Uri.EscapeDataString(searchQuery);
 
-        var url = $"search.json?q={encodedQuery}&limit=100";
+        var url = $"search.json?q={encodedQuery}&limit=100" +
+            "&fields=key,title,author_name,cover_i,first_publish_year,isbn,publisher";
 
         using var response =
             await _httpClient.GetAsync(url, cancellationToken);
@@ -61,16 +62,28 @@ public class BookService
                         normalizedQuery,
                         StringComparison.OrdinalIgnoreCase)) ?? false))
             .Take(30)
-            .Select(book => new BookSearchResultDto
+            .Select(book =>
             {
-                ExternalId = book.Key ?? "",
-                Title = book.Title ?? "",
-                Author = book.AuthorName != null
-                    ? string.Join(", ", book.AuthorName)
-                    : "",
-                CoverUrl = book.CoverI.HasValue
-                    ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-M.jpg"
-                    : null
+                var (isbn10, isbn13) = PickIsbns(book.Isbn);
+                
+                return new BookSearchResultDto
+                {
+                    ExternalId = book.Key ?? "",
+                    Title = book.Title ?? "",
+                    Author = book.AuthorName != null
+                        ? string.Join(", ", book.AuthorName)
+                        : "",
+                    CoverUrl = book.CoverI.HasValue
+                        ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-M.jpg"
+                        : null,
+                Year = book.FirstPublishYear,
+                Isbn10 = isbn10,
+                Isbn13 = isbn13,
+                Publishers = (book.Publishers ?? new List<string>())
+                  .Distinct(StringComparer.OrdinalIgnoreCase)
+                  .Take(10)
+                  .ToList()
+                };
             })
             .ToList();
     }
@@ -94,6 +107,15 @@ public class BookService
 
         [JsonPropertyName("cover_i")]
         public int? CoverI { get; set; }
+        
+        [JsonPropertyName("first_publish_year")]
+        public int? FirstPublishYear { get; set; }
+
+        [JsonPropertyName("isbn")]
+        public List<string>? Isbn { get; set; }
+
+        [JsonPropertyName("publisher")]
+        public List<string>? Publishers { get; set; }
     }
 
     public async Task<GetBookDto?> CreateAsync(
@@ -161,6 +183,20 @@ public class BookService
             query,
             @"(\+|-|&&|\|\||!|\(|\)|\{|\}|\[|\]|\^|""|~|\*|\?|:|\\|/)",
             @"\$1");
+    }
+
+    private static (string? Isbn10, string? Isbn13) PickIsbns(List<string>? isbns)
+    {
+        if (isbns is null) return (null, null);
+
+        var cleaned = isbns
+            .Select(i => i.Replace("-", "").Trim())
+            .ToList();
+
+        return (
+            cleaned.FirstOrDefault(i => i.Length == 10),
+            cleaned.FirstOrDefault(i => i.Length == 13)
+        );
     }
 
     private static GetBookDto ToDto(Book entry)
