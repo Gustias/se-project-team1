@@ -55,6 +55,36 @@ namespace BookClub.Api.Migrations
                     b.ToTable("Books");
                 });
 
+            modelBuilder.Entity("BookClub.Api.Models.BookRatingEntry", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("BookId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BookId");
+
+                    b.HasIndex("UserId", "BookId")
+                        .IsUnique();
+
+                    b.ToTable("BookRatingEntries", t =>
+                        {
+                            t.HasCheckConstraint("CK_BookRatingEntries_Rating", "\"Rating\" >= 1 AND \"Rating\" <= 5");
+                        });
+                });
+
             modelBuilder.Entity("BookClub.Api.Models.ReadingLog", b =>
                 {
                     b.Property<int>("Id")
@@ -140,6 +170,25 @@ namespace BookClub.Api.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("BookClub.Api.Models.BookRatingEntry", b =>
+                {
+                    b.HasOne("BookClub.Api.Models.Book", "Book")
+                        .WithMany("BookRatings")
+                        .HasForeignKey("BookId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BookClub.Api.Models.User", "User")
+                        .WithMany("BookRatings")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Book");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("BookClub.Api.Models.ReadingLog", b =>
                 {
                     b.HasOne("BookClub.Api.Models.Book", "Book")
@@ -180,6 +229,8 @@ namespace BookClub.Api.Migrations
 
             modelBuilder.Entity("BookClub.Api.Models.Book", b =>
                 {
+                    b.Navigation("BookRatings");
+
                     b.Navigation("ReadingLogs");
 
                     b.Navigation("ReadingProgresses");
@@ -187,6 +238,8 @@ namespace BookClub.Api.Migrations
 
             modelBuilder.Entity("BookClub.Api.Models.User", b =>
                 {
+                    b.Navigation("BookRatings");
+
                     b.Navigation("ReadingLogs");
 
                     b.Navigation("ReadingProgresses");
