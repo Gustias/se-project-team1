@@ -38,6 +38,25 @@ public class AppDbContext : DbContext
             .HasIndex(b => b.ExternalId)
             .IsUnique();
 
+        modelBuilder.Entity<BookRatingEntry>(entity =>
+        {
+            entity.Property(r => r.Rating)
+                .HasConversion(
+                    rating => rating.Value,
+                    value => new BookRating(value));
+
+            entity.HasIndex(r => new
+            {
+                r.UserId,
+                r.BookId
+            })
+            .IsUnique();
+
+            entity.ToTable(table => table.HasCheckConstraint(
+                "CK_BookRatingEntries_Rating",
+                "\"Rating\" >= 1 AND \"Rating\" <= 5"));
+        });
+
         modelBuilder.Entity<ReadingProgress>()
             .Property(p => p.Status)
             .HasConversion<string>()
@@ -48,4 +67,5 @@ public class AppDbContext : DbContext
     public DbSet<User> Users => Set<User>();
     public DbSet<ReadingProgress> ReadingProgresses => Set<ReadingProgress>();
     public DbSet<ReadingLog> ReadingLogs => Set<ReadingLog>();
+    public DbSet<BookRatingEntry> BookRatingEntries => Set<BookRatingEntry>();
 }
