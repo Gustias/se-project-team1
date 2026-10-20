@@ -7,6 +7,7 @@ public class ReadingLog
     public Book Book { get; set; } = null!;
     public required int UserId { get; set; }
     public required int BookId { get; set; }
-    public int? PagesRead { get; set; }
-    public DateOnly Date { get; set; }
+    public int StartPage { get; set; } // page that user started on during the session
+    public int EndPage { get; set; }  // page that user ended up on during the session
+    public required DateOnly Date { get; set; }
 }

@@ -33,8 +33,7 @@ public class AppDbContext : DbContext
                 rl.UserId,
                 rl.BookId,
                 rl.Date
-            })
-            .IsUnique();
+            });
         modelBuilder.Entity<Book>()
             .HasIndex(b => b.ExternalId)
             .IsUnique();

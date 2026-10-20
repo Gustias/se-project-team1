@@ -69,7 +69,10 @@ namespace BookClub.Api.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
-                    b.Property<int?>("PagesRead")
+                    b.Property<int>("EndPage")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StartPage")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
@@ -79,8 +82,7 @@ namespace BookClub.Api.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.HasIndex("UserId", "BookId", "Date")
-                        .IsUnique();
+                    b.HasIndex("UserId", "BookId", "Date");
 
                     b.ToTable("ReadingLogs");
                 });
