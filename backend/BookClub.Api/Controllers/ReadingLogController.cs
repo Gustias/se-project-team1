@@ -18,20 +18,61 @@ public class ReadingLogController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateAsync(CreateReadingLogDto request)
+    public async Task<IActionResult> CreateEntry(CreateReadingLogDto request)
     {
-        return NoContent();
+
+        if (request.StartPage > request.EndPage)
+        {
+            return BadRequest("EndPage must be greater than or equal to StartPage");
+        }
+
+        var entry =  await _readingLogService.CreateAsync(
+            request.UserId,
+            request.BookId,
+            request.StartPage,
+            request.EndPage,
+            request.Date
+            );
+
+        if (entry is null)
+        {
+            return BadRequest("Could not create a reading log.");
+        }
+
+        return CreatedAtAction(nameof(GetEntryById), new { id = entry.Id }, entry);
     }
 
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetAsync(int id)
+    [HttpGet("ById/{id}")]
+    public async Task<IActionResult> GetEntryById(int id)
     {
-        return NoContent();
+        var log = await _readingLogService.GetAsync(id);
+
+        if (log is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(log);
     }
+
+    [HttpGet("summary/{userId}")]
+    public async Task<IActionResult> GetSummary(int userId,
+        DateOnly from, DateOnly to)
+    {
+        return Ok();
+    }
+
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteAsync(int id)
+    public async Task<IActionResult> DeleteEntry(int id)
     {
+        var deleted = await _readingLogService.DeleteAsync(id);
+
+        if (!deleted)
+        {
+            return NotFound();
+        }
+
         return NoContent();
     }
 
