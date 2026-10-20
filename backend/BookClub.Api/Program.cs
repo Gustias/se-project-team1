@@ -8,6 +8,7 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<AppDbContext>();
 builder.Services.AddScoped<BookService>();
 builder.Services.AddScoped<ReadingProgressService>();
+builder.Services.AddScoped<BookRatingService>();
 
 builder.Services.AddHttpClient<BookService>(client =>
 {
