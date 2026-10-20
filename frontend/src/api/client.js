@@ -94,3 +94,13 @@ export async function deleteReadingProgress(id) {
   });
   return handle(response);
 }
+
+export async function createBookRating({ userId, bookId, rating }) {
+  const response = await fetch(`${BASE_URL}/api/book-ratings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, bookId, rating }),
+  });
+
+  return handle(response);
+}
