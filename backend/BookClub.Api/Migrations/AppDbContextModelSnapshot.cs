@@ -52,7 +52,7 @@ namespace BookClub.Api.Migrations
                     b.HasIndex("ExternalId")
                         .IsUnique();
 
-                    b.ToTable("Books", (string)null);
+                    b.ToTable("Books");
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.BookRatingEntry", b =>
@@ -99,7 +99,10 @@ namespace BookClub.Api.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
-                    b.Property<int?>("PagesRead")
+                    b.Property<int>("EndPage")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StartPage")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
@@ -109,10 +112,12 @@ namespace BookClub.Api.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.HasIndex("UserId", "BookId", "Date")
-                        .IsUnique();
+                    b.HasIndex("UserId", "BookId", "Date");
 
-                    b.ToTable("ReadingLogs", (string)null);
+                    b.ToTable("ReadingLogs", t =>
+                        {
+                            t.HasCheckConstraint("CK_ReadingLogs_Pages", "\"EndPage\" >= \"StartPage\"");
+                        });
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.ReadingProgress", b =>
@@ -150,7 +155,7 @@ namespace BookClub.Api.Migrations
                     b.HasIndex("UserId", "BookId")
                         .IsUnique();
 
-                    b.ToTable("ReadingProgresses", (string)null);
+                    b.ToTable("ReadingProgresses");
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.User", b =>
@@ -167,7 +172,7 @@ namespace BookClub.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.BookRatingEntry", b =>

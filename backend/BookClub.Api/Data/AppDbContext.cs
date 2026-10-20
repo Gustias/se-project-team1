@@ -34,6 +34,11 @@ public class AppDbContext : DbContext
                 rl.BookId,
                 rl.Date
             });
+        modelBuilder.Entity<ReadingLog>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_ReadingLogs_Pages",
+                "\"EndPage\" >= \"StartPage\""));
+
         modelBuilder.Entity<Book>()
             .HasIndex(b => b.ExternalId)
             .IsUnique();
