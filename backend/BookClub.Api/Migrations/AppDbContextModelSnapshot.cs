@@ -52,7 +52,7 @@ namespace BookClub.Api.Migrations
                     b.HasIndex("ExternalId")
                         .IsUnique();
 
-                    b.ToTable("Books");
+                    b.ToTable("Books", (string)null);
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.ReadingLog", b =>
@@ -69,10 +69,7 @@ namespace BookClub.Api.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
-                    b.Property<int>("EndPage")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("StartPage")
+                    b.Property<int?>("PagesRead")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
@@ -82,9 +79,10 @@ namespace BookClub.Api.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.HasIndex("UserId", "BookId", "Date");
+                    b.HasIndex("UserId", "BookId", "Date")
+                        .IsUnique();
 
-                    b.ToTable("ReadingLogs");
+                    b.ToTable("ReadingLogs", (string)null);
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.ReadingProgress", b =>
@@ -122,7 +120,7 @@ namespace BookClub.Api.Migrations
                     b.HasIndex("UserId", "BookId")
                         .IsUnique();
 
-                    b.ToTable("ReadingProgresses");
+                    b.ToTable("ReadingProgresses", (string)null);
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.User", b =>
@@ -139,7 +137,7 @@ namespace BookClub.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.ReadingLog", b =>
