@@ -46,8 +46,6 @@ Later development may include:
 - Vite
 - JavaScript
 
-> The frontend application is still being integrated into the shared `main` branch.
-
 ### Backend
 
 - C#
@@ -105,10 +103,20 @@ se-project/
 │       └── Integrations/
 │
 ├── frontend/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── constants/
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── index.html 
+│   └── package.json
 │
 ├── docs/
 │   ├── api.md
-│   └── architecture.md
+│   ├── architecture.md
+│   └── user-stories.md
 │
 ├── CONTRIBUTING.md
 └── README.md
@@ -137,7 +145,7 @@ Example:
 ]
 ```
 
-The search currently requests up to 20 results.
+The search currently requests up to 30 results.
 
 ### Reading Progress
 
@@ -188,8 +196,6 @@ dotnet run
 The local ASP.NET Core port may differ depending on the environment.
 
 ## Running the Frontend
-
-When the React/Vite application is available in the shared repository:
 
 ```bash
 cd frontend
@@ -255,6 +261,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full team workflow.
 
 | Document | Description |
 |---|---|
+| [User Stories](docs/user-stories.md) | User stories |
 | [API Documentation](docs/api.md) | Endpoints, request bodies, responses, and status codes |
 | [Architecture](docs/architecture.md) | High-level application structure and responsibilities |
 | [Contributing](CONTRIBUTING.md) | Branches, commits, Pull Requests, and review workflow |
@@ -288,4 +295,4 @@ Mark as Finished
 Rate the book
 ```
 
-The backend foundation is in place. The next major milestone is completing the first end-to-end frontend-to-backend flow and the personal-library features.
+The backend and frontend foundations are in place. The next major milestone is fully completing personal-library features.

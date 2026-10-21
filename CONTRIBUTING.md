@@ -95,19 +95,70 @@ Keep commits focused on one logical change when possible.
 
 A Pull Request should explain what changed and why.
 
-Example:
+Template:
 
 ```md
-## Summary
+## What changed
 
-Adds Open Library book search integration.
+<!--
+Describe the main changes made in this pull request.
+Replace or remove the example below before submitting.
 
-## Changes
+Example:
+- Added a personal library page.
+- Added buttons for changing reading status.
+-->
 
-- replaces mock search data
-- integrates Open Library through HttpClient
-- maps external results to BookSearchResultDto
-- preserves the frontend API contract
+-
+
+## Why
+
+<!--
+Explain why this change was needed.
+Replace or remove the example below before submitting.
+
+Example:
+- Users need a way to view and manage books they have saved.
+-->
+
+-
+
+## Testing
+
+<!--
+Describe how the changes were tested.
+Replace or remove the example below before submitting.
+
+Example:
+- Ran `dotnet build`.
+- Ran `npm run build`.
+- Manually tested adding a book to the personal library.
+-->
+
+-
+
+## Related issue
+
+<!--
+Link the issue this pull request addresses.
+Replace or remove the example below before submitting.
+
+Example:
+Closes #18
+
+If there is no related issue, write:
+N/A
+-->
+
+Closes #
+
+## Checklist
+
+- [ ] The project builds successfully.
+- [ ] I ran the relevant build, tests, or manual checks for these changes.
+- [ ] I reviewed my own changes.
+- [ ] I did not commit secrets or temporary/debug code.
+- [ ] Documentation was updated if necessary.
 ```
 
 Before requesting review:
@@ -124,6 +175,14 @@ Backend build check:
 ```bash
 cd backend/BookClub.Api
 dotnet build
+```
+
+Frontend build check:
+
+```bash
+cd frontend
+npm install
+npm run build
 ```
 
 ## Code Review
@@ -217,6 +276,7 @@ README.md
 CONTRIBUTING.md
 docs/api.md
 docs/architecture.md
+docs/user-stories.md
 ```
 
 Do not keep duplicate copies of the same documentation in multiple locations.
