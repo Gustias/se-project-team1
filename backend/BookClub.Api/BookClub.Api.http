@@ -45,3 +45,25 @@ DELETE localhost:5027/api/books/2
 
 ### Get book
 GET localhost:5027/api/books/1
+
+
+### Create reading log entry
+POST localhost:5027/api/reading-log
+Content-Type: application/json
+
+{
+    "UserId": 1,
+    "BookId": 18,
+    "StartPage": 11,
+    "EndPage": 100,
+    "Date": "2026-10-25"
+}
+
+### Get reading log entry
+GET localhost:5027/api/reading-log/2
+
+### Delete reading log entry
+DELETE localhost:5027/api/reading-log/1
+
+### Get reading log summary
+GET localhost:5027/api/reading-log/summary/1?from=2026-10-01&to=2026-10-31

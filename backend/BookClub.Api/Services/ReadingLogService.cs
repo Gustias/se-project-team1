@@ -1,6 +1,7 @@
 using BookClub.Api.Data;
 using BookClub.Api.DTOs;
 using BookClub.Api.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookClub.Api.Services;
 
@@ -52,6 +53,27 @@ public class ReadingLogService
         }
 
         return ToDto(existing);
+    }
+
+    public async Task<ReadingSummaryDto> GetSummaryAsync(int userId, DateOnly from, DateOnly to)
+    {
+        var days = await _dbContext.ReadingLogs
+            .Where(l => l.UserId == userId && l.Date >= from && l.Date <= to)
+            .GroupBy(l => l.Date)
+            .Select(g => new DailyReadingDto
+            {
+                Date = g.Key,
+                PagesRead = g.Sum(l => l.EndPage - l.StartPage)
+            })
+            .OrderBy(d => d.Date)
+            .ToListAsync();
+        return new ReadingSummaryDto
+        {
+            From = from,
+            To = to,
+            TotalPages = days.Sum(d => d.PagesRead),
+            Days = days
+        };
     }
 
     public async Task<bool> DeleteAsync(int id)

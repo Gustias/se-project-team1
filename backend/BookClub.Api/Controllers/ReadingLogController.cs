@@ -42,7 +42,7 @@ public class ReadingLogController : ControllerBase
         return CreatedAtAction(nameof(GetEntryById), new { id = entry.Id }, entry);
     }
 
-    [HttpGet("ById/{id}")]
+    [HttpGet("{id}")]
     public async Task<IActionResult> GetEntryById(int id)
     {
         var log = await _readingLogService.GetAsync(id);
@@ -59,7 +59,13 @@ public class ReadingLogController : ControllerBase
     public async Task<IActionResult> GetSummary(int userId,
         DateOnly from, DateOnly to)
     {
-        return Ok();
+
+        if (to < from)
+        {
+            return BadRequest("'to' date must be on or after 'from' date.");
+        }
+
+        return Ok(await _readingLogService.GetSummaryAsync(userId, from, to));
     }
 
 
