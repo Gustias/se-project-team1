@@ -17,22 +17,78 @@ body {
   margin-bottom: 30px;
 }
 
+.search button,
+.book-card .info > button,
+.reading-list > button,
+.book-rating > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 160px;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 12px;
+
+  border: 1px solid #839690;
+  border-radius: 8px;
+
+  background: #839690;
+  color: white;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.search button:hover:not(:disabled),
+.book-card .info > button:hover:not(:disabled),
+.reading-list > button:hover:not(:disabled),
+.book-rating > button:hover:not(:disabled) {
+  background: #29483f;
+  border-color: #29483f;
+}
+
+.search button:active:not(:disabled),
+.book-card .info > button:active:not(:disabled),
+.reading-list > button:active:not(:disabled),
+.book-rating > button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.search button:focus-visible,
+.book-card .info > button:focus-visible,
+.reading-list > button:focus-visible,
+.book-rating > button:focus-visible {
+  outline: 3px solid #a8c8bc;
+  outline-offset: 2px;
+}
+
+.search button:disabled,
+.book-card .info > button:disabled,
+.reading-list > button:disabled,
+.book-rating > button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .search input {
   flex: 1;
   padding: 12px;
   font-size: 16px;
 }
 
-.search button {
-  padding: 12px 24px;
-  cursor: pointer;
-}
-
 .books {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 20px;
-  /*align-items: start;*/
 }
 
 .book-card {
@@ -50,16 +106,25 @@ body {
   flex-direction: column;
 }
 
-.book-card .info button {
-  margin-top: auto;
-  align-self: flex-start;
-}
-
 .book-card img,
 .no-cover {
   width: 100%;
   height: 260px;
   object-fit: contain;
+}
+
+.book-card > img,
+.book-card > .no-cover {
+  margin-bottom: 16px;
+}
+
+.book-card h2 {
+  font-size: 18px;
+  margin-bottom: 8px;
+}
+
+.book-card .info h2 + p {
+  margin-top: 0;
 }
 
 .no-cover {
@@ -104,4 +169,76 @@ body {
 
 .error {
   color: red;
+}
+
+.reading-list,
+.book-rating {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.reading-list label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.reading-list select {
+  width: 160px;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 12px;
+
+  border: 1px solid #365e52;
+  border-radius: 8px;
+  background: white;
+  color: #222;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+
+  cursor: pointer;
+}
+
+.rating-stars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.book-card .info .rating-stars button {
+  margin-top: 0;
+  align-self: auto;
+  padding: 2px 4px;
+  border: none;
+  background: transparent;
+  color: #d49b00;
+  font-size: 30px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.rating-stars button:hover:not(:disabled) {
+  transform: scale(1.15);
+}
+
+.rating-stars button:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.rating-stars button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }

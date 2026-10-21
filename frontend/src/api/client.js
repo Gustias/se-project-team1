@@ -79,12 +79,20 @@ export async function getReadingProgress(id) {
   return handle(response);
 }
 
-export async function updateReadingProgress(id, { progress, chapter }) {
+export async function updateReadingProgress(
+  id,
+  { progress, lastChapterRead, status },
+) {
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ progress, chapter: chapter ?? null }),
+    body: JSON.stringify({
+      progress,
+      lastChapterRead: lastChapterRead ?? null,
+      status,
+    }),
   });
+
   return handle(response);
 }
 
@@ -92,5 +100,15 @@ export async function deleteReadingProgress(id) {
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "DELETE",
   });
+  return handle(response);
+}
+
+export async function createBookRating({ userId, bookId, rating }) {
+  const response = await fetch(`${BASE_URL}/api/book-ratings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ userId, bookId, rating }),
+  });
+
   return handle(response);
 }
