@@ -99,7 +99,10 @@ namespace BookClub.Api.Migrations
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
 
-                    b.Property<int?>("PagesRead")
+                    b.Property<int>("EndPage")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("StartPage")
                         .HasColumnType("integer");
 
                     b.Property<int>("UserId")
@@ -109,10 +112,12 @@ namespace BookClub.Api.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.HasIndex("UserId", "BookId", "Date")
-                        .IsUnique();
+                    b.HasIndex("UserId", "BookId", "Date");
 
-                    b.ToTable("ReadingLogs");
+                    b.ToTable("ReadingLogs", t =>
+                        {
+                            t.HasCheckConstraint("CK_ReadingLogs_Pages", "\"EndPage\" >= \"StartPage\"");
+                        });
                 });
 
             modelBuilder.Entity("BookClub.Api.Models.ReadingProgress", b =>
