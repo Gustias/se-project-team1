@@ -47,16 +47,16 @@ Technology:
 Current structure:
 
 ```text
-├── frontend/
-│   ├── src/
-│   │   ├── api/
-│   │   ├── components/
-│   │   ├── constants/
-│   │   ├── App.jsx
-│   │   ├── index.css
-│   │   └── main.jsx
-│   ├── index.html 
-│   └── package.json
+frontend/
+├── src/
+│   ├── api/
+│   ├── components/
+│   ├── constants/
+│   ├── App.jsx
+│   ├── index.css
+│   └── main.jsx
+├── index.html 
+└── package.json
 ```
 
 Responsibilities:

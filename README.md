@@ -295,4 +295,4 @@ Mark as Finished
 Rate the book
 ```
 
-The backend foundation is in place. The next major milestone is fully completing personal-library features.
+The backend and frontend foundations are in place. The next major milestone is fully completing personal-library features.
