@@ -38,12 +38,25 @@ The backend is responsible for:
 
 ## Frontend
 
-Planned/current frontend technology:
+Technology:
+
+- React
+- Vite
+- JavaScript
+
+Current structure:
 
 ```text
-React
-Vite
-JavaScript
+├── frontend/
+│   ├── src/
+│   │   ├── api/
+│   │   ├── components/
+│   │   ├── constants/
+│   │   ├── App.jsx
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── index.html 
+│   └── package.json
 ```
 
 Responsibilities:
@@ -60,11 +73,9 @@ The frontend should not depend directly on Open Library response structures.
 
 Technology:
 
-```text
-C#
-ASP.NET Core
-.NET 10
-```
+- C#
+- ASP.NET Core
+- .NET 10
 
 Current structure:
 
@@ -96,10 +107,9 @@ HTTP response
 
 Current examples:
 
-```text
-BooksController
-ReadingProgressController
-```
+- BooksController
+- ReadingProgressController
+- BookRatingsControler
 
 Controllers should remain small and should not contain database or external API implementation details.
 
