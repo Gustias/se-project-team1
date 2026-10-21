@@ -80,7 +80,7 @@ As a user, I want to add a book to my Want to Read list so that I can keep track
 - The book is assigned the Want to Read status.
 - The same book cannot be added multiple times.
 
-**Status:** In Progress
+**Status:** Implemented
 
 ---
 
@@ -149,7 +149,7 @@ As a user, I want to rate a finished book on a five-point scale so that I can re
 - The saved rating is displayed to the user.
 - The user can only rate a book that has been marked as read.
 
-**Status:** In Progress
+**Status:** Implemented
 
 ---
 
