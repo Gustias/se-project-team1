@@ -6,11 +6,14 @@ function BookCard({ book }) {
   const [imgFailed, setImgFailed] = useState(false);
 
   const [status, setStatus] = useState("WantToRead");
+  const [savedStatus, setSavedStatus] = useState(null);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const [savedBookId, setSavedBookId] = useState(null);
+  const [readingProgressId, setReadingProgressId] = useState(null);
+
   const [rating, setRating] = useState(0);
   const [ratingSaving, setRatingSaving] = useState(false);
   const [ratingMessage, setRatingMessage] = useState("");
@@ -30,7 +33,7 @@ function BookCard({ book }) {
     setMessage("");
     setError("");
 
-    try{
+    try {
       const savedBook = await client.createBook({
         externalId: book.externalId,
         isbn10: book.isbn10 ?? null,
@@ -41,7 +44,7 @@ function BookCard({ book }) {
 
       setSavedBookId(savedBook.id);
 
-      await client.createReadingProgress({
+      const readingProgress = await client.createReadingProgress({
         userId: 1,
         bookId: savedBook.id,
         progress: 0,
@@ -49,9 +52,43 @@ function BookCard({ book }) {
         status: statusValues[status],
       });
 
+      setReadingProgressId(readingProgress.id);
+      setSavedStatus(status);
       setMessage("Book added to your list!");
     } catch (err) {
-      setError(err.message || "Couldn't add this book.")
+      setError(err.message || "Couldn't add this book.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleStatusChange(event) {
+    const newStatus = event.target.value;
+
+    if (!readingProgressId) {
+      setStatus(newStatus);
+      return;
+    }
+
+    const previousStatus = status;
+
+    setStatus(newStatus);
+    setSaving(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await client.updateReadingProgress(readingProgressId, {
+        progress: 0,
+        lastChapterRead: null,
+        status: statusValues[newStatus],
+      });
+
+      setSavedStatus(newStatus);
+      setMessage("Reading status updated!");
+    } catch (err) {
+      setStatus(previousStatus);
+      setError(err.message || "Could not update reading status.");
     } finally {
       setSaving(false);
     }
@@ -68,14 +105,12 @@ function BookCard({ book }) {
       await client.createBookRating({
         userId: 1,
         bookId: savedBookId,
-        rating: rating,
+        rating,
       });
 
       setRatingMessage("Rating saved!");
     } catch (err) {
-      setRatingError(
-        err.message || "Could not save rating."
-      );
+      setRatingError(err.message || "Could not save rating.");
     } finally {
       setRatingSaving(false);
     }
@@ -99,8 +134,13 @@ function BookCard({ book }) {
 
         <p>{book.author || "Unknown author"}</p>
 
-        {book.year && <p className="meta">First published: {book.year}</p>}
-        {book.isbn13 && <p className="meta">ISBN-13: {book.isbn13}</p>}
+        {book.year && (
+          <p className="meta">First published: {book.year}</p>
+        )}
+
+        {book.isbn13 && (
+          <p className="meta">ISBN-13: {book.isbn13}</p>
+        )}
 
         {hasDetails && (
           <>
@@ -114,7 +154,9 @@ function BookCard({ book }) {
 
             {expanded && (
               <div className="details">
-                {book.isbn10 && <p className="meta">ISBN-10: {book.isbn10}</p>}
+                {book.isbn10 && (
+                  <p className="meta">ISBN-10: {book.isbn10}</p>
+                )}
 
                 {book.description && (
                   <p className="description">{book.description}</p>
@@ -123,6 +165,7 @@ function BookCard({ book }) {
                 {publishers.length > 0 && (
                   <>
                     <h3>Publishers</h3>
+
                     <ul>
                       {publishers.map((name) => (
                         <li key={name}>{name}</li>
@@ -140,7 +183,7 @@ function BookCard({ book }) {
             Reading status:
             <select
               value={status}
-              onChange={(event) => setStatus(event.target.value)}
+              onChange={handleStatusChange}
               disabled={saving}
             >
               <option value="WantToRead">Want to read</option>
@@ -152,16 +195,20 @@ function BookCard({ book }) {
           <button
             type="button"
             onClick={handleAddToList}
-            disabled={saving}
+            disabled={saving || readingProgressId !== null}
           >
-            {saving ? "Adding..." : "Add to my list"}
+            {readingProgressId
+              ? "Added to my list"
+              : saving
+                ? "Adding..."
+                : "Add to my list"}
           </button>
 
           {message && <p>{message}</p>}
           {error && <p className="error">{error}</p>}
         </div>
 
-        {message && status === "Read" && savedBookId && (
+        {savedStatus === "Read" && savedBookId && (
           <div className="book-rating">
             <p>Rate this book:</p>
 
@@ -173,8 +220,7 @@ function BookCard({ book }) {
                   aria-label={`Rate ${value} out of 5`}
                   aria-pressed={rating === value}
                   onClick={() => setRating(value)}
-                  disabled={
-                    ratingSaving || Boolean(ratingMessage)}
+                  disabled={ratingSaving || Boolean(ratingMessage)}
                 >
                   {value <= rating ? "★" : "☆"}
                 </button>
@@ -185,17 +231,18 @@ function BookCard({ book }) {
               type="button"
               onClick={handleSaveRating}
               disabled={
-                rating === 0 || ratingSaving || Boolean(ratingMessage)}
+                rating === 0 ||
+                ratingSaving ||
+                Boolean(ratingMessage)
+              }
             >
               {ratingSaving ? "Saving..." : "Save rating"}
             </button>
 
-            {ratingMessage && (<p>{ratingMessage}</p>)}
-
-            {ratingError && (<p className="error">{ratingError}</p>)}
-
-            </div>
-          )}
+            {ratingMessage && <p>{ratingMessage}</p>}
+            {ratingError && <p className="error">{ratingError}</p>}
+          </div>
+        )}
       </div>
     </article>
   );

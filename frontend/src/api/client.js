@@ -79,12 +79,20 @@ export async function getReadingProgress(id) {
   return handle(response);
 }
 
-export async function updateReadingProgress(id, { progress, chapter }) {
+export async function updateReadingProgress(
+  id,
+  { progress, lastChapterRead, status },
+) {
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ progress, chapter: chapter ?? null }),
+    body: JSON.stringify({
+      progress,
+      lastChapterRead: lastChapterRead ?? null,
+      status,
+    }),
   });
+
   return handle(response);
 }
 
