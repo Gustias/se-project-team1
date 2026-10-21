@@ -65,7 +65,7 @@ public class BookService
             .Select(book =>
             {
                 var (isbn10, isbn13) = PickIsbns(book.Isbn);
-                
+
                 return new BookSearchResultDto
                 {
                     ExternalId = book.Key ?? "",
@@ -76,10 +76,10 @@ public class BookService
                     CoverUrl = book.CoverI.HasValue
                         ? $"https://covers.openlibrary.org/b/id/{book.CoverI}-M.jpg"
                         : null,
-                Year = book.FirstPublishYear,
-                Isbn10 = isbn10,
-                Isbn13 = isbn13,
-                Publishers = (book.Publishers ?? new List<string>())
+                    Year = book.FirstPublishYear,
+                    Isbn10 = isbn10,
+                    Isbn13 = isbn13,
+                    Publishers = (book.Publishers ?? new List<string>())
                   .Distinct(StringComparer.OrdinalIgnoreCase)
                   .Take(10)
                   .ToList()
@@ -107,7 +107,7 @@ public class BookService
 
         [JsonPropertyName("cover_i")]
         public int? CoverI { get; set; }
-        
+
         [JsonPropertyName("first_publish_year")]
         public int? FirstPublishYear { get; set; }
 
@@ -118,7 +118,7 @@ public class BookService
         public List<string>? Publishers { get; set; }
     }
 
-    public async Task<GetBookDto?> CreateAsync(
+    public async Task<CreateBookResult> CreateAsync(
         string externalId,
         string? isbn10,
         string? isbn13,
@@ -131,7 +131,7 @@ public class BookService
 
         if (existing is not null)
         {
-            return null;
+            return new CreateBookResult(ToDto(existing), false);
         }
 
         var entry = new Book
@@ -146,7 +146,7 @@ public class BookService
         _dbContext.Books.Add(entry);
         await _dbContext.SaveChangesAsync();
 
-        return ToDto(entry);
+        return new CreateBookResult(ToDto(entry), true);
 
     }
 
@@ -211,6 +211,4 @@ public class BookService
             Author = entry.Author
         };
     }
-
-
 }

@@ -39,22 +39,19 @@ public class BooksController : ControllerBase
     public async Task<IActionResult> CreateAsync(
         CreateBookDto request)
     {
-        var entry = await _bookService.CreateAsync(
+        var result = await _bookService.CreateAsync(
             request.ExternalId,
             request.Isbn10,
             request.Isbn13,
             request.Title,
             request.Author);
 
-        if (entry is null)
+        if (result.Created)
         {
-            return Conflict(new
-            {
-                message = "Error creating a book."
-            });
+            return CreatedAtAction(nameof(Get), new { id = result.Book.Id }, result.Book);
         }
 
-        return CreatedAtAction(nameof(Get), new { id = entry.Id }, entry);
+        return Ok(result.Book);
     }
 
     [HttpDelete("{id}")]
