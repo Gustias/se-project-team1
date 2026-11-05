@@ -112,3 +112,8 @@ export async function createBookRating({ userId, bookId, rating }) {
 
   return handle(response);
 }
+
+export async function getReadingSummary(userId, from, to){
+  const response = await fetch(`${BASE_URL}/api/reading-log/summary/${userId}?from${from}&to=${to}`);
+  return handle(response);
+}
