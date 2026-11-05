@@ -29,5 +29,11 @@ export default function ReadingStats() {
       .then((data) => console.log(range, data))
       .catch((err) => console.log(err));
   }, [range]);
-  return "testing";
+  return (
+    <div>
+      <button onClick={() => setRange("month")}>Month</button>
+      <button onClick={() => setRange("year")}>Year</button>
+      <button onClick={() => setRange("all")}>All</button>
+    </div>
+  );
 }
