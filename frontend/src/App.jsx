@@ -7,7 +7,6 @@ import {Link, Route, Routes} from "react-router-dom";
 function App() {
   return (
     <main className="container">
-      <h1>Book Club</h1>
 
       <Routes>
         <Route path="/" element={<BookSearch />} />
