@@ -189,6 +189,17 @@ public class BookService
     return editions.Select(ToBookEditionDto).ToList();
     }
 
+    public async Task<List<GetBookEditionDto>> GetEditionsAsync(
+    int bookId,
+    CancellationToken cancellationToken = default)
+    {
+    var editions = await _dbContext.BookEditions
+        .Where(e => e.Id == bookId)
+        .ToListAsync(cancellationToken);
+
+    return editions.Select(ToBookEditionDto).ToList();
+    }
+
     private static string EscapeSearchQuery(string query)
     {
         return Regex.Replace(

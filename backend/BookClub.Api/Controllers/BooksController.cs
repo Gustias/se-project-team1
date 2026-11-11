@@ -36,7 +36,7 @@ public class BooksController : ControllerBase
         return Ok(books);
     }
     [HttpPost]
-    public async Task<IActionResult> CreateBookAsync(
+    public async Task<IActionResult> CreateBook(
         CreateBookDto request)
     {
         var result = await _bookService.CreateBookAsync(
@@ -46,7 +46,7 @@ public class BooksController : ControllerBase
 
         if (result.Created)
         {
-            return CreatedAtAction(nameof(Get), new { id = result.Book.Id }, result.Book);
+            return CreatedAtAction(nameof(GetBook), new { id = result.Book.Id }, result.Book);
         }
 
         return Ok(result.Book);
@@ -66,16 +66,25 @@ public class BooksController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(int id)
+    public async Task<IActionResult> GetBook(int id)
     {
-        var entry = await _bookService.GetBookAsync(id);
+        var book = await _bookService.GetBookAsync(id);
 
-        if (entry is null)
+        if (book is null)
         {
             return NotFound();
         }
 
-        return Ok(entry);
+        return Ok(book);
     }
 
+    [HttpGet("{id}/editions")]
+    public async Task<ActionResult<List<GetBookEditionDto>>> GetEdition(
+    int id,
+    CancellationToken cancellationToken)
+    {
+    var edition = await _bookService.GetEditionAsync(id, cancellationToken);
+
+    return Ok(edition);
+    }
 }

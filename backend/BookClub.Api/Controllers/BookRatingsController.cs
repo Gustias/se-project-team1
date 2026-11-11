@@ -15,7 +15,7 @@ public class BookRatingsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateAsync(CreateBookRatingDto request)
+    public async Task<IActionResult> CreateBookAsync(CreateBookRatingDto request)
     {
         if (request.Rating < 1 || request.Rating > 5)
         {
@@ -27,10 +27,48 @@ public class BookRatingsController : ControllerBase
 
         try
         {
-            var rating = await _bookRatingService.CreateAsync(
+            var rating = await _bookRatingService.CreateBookAsync(
                 request.UserId,
                 request.BookId,
-                request.Rating);
+                request.Rating,
+                request.Review);
+
+            if (rating is null)
+            {
+                return Conflict(new
+                {
+                    message = "Could not create rating. Check whether the user and book exist, the book is marked as read, and the book has not already been rated."
+                });
+            }
+
+            return Ok(rating);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return BadRequest(new
+            {
+                message = "Rating must be between 1 and 5."
+            });
+        }
+    }
+
+    public async Task<IActionResult> CreateEditionAsync(CreateBookRatingDto request)
+    {
+        if (request.Rating < 1 || request.Rating > 5)
+        {
+            return BadRequest(new
+            {
+                message = "Rating must be between 1 and 5"
+            });
+        }
+
+        try
+        {
+            var rating = await _bookRatingService.CreateEditionAsync(
+                request.UserId,
+                request.BookId,
+                request.Rating,
+                request.Review);
 
             if (rating is null)
             {
@@ -52,9 +90,9 @@ public class BookRatingsController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetAsync(int id)
+    public async Task<IActionResult> GetBookAsync(int id)
     {
-        var rating = await _bookRatingService.GetAsync(id);
+        var rating = await _bookRatingService.GetBookAsync(id);
 
         if (rating is null)
         {
