@@ -45,10 +45,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<BookRatingEntry>(entity =>
         {
-            entity.Property(r => r.Rating)
-                .HasConversion(
-                    rating => rating.Value,
-                    value => new BookRating(value));
+            entity.Property(r => r.Rating);
 
             entity.HasIndex(r => new
             {
@@ -69,6 +66,7 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Book> Books => Set<Book>();
+    public DbSet<BookEdition> BookEditions => Set<BookEdition>();
     public DbSet<User> Users => Set<User>();
     public DbSet<ReadingProgress> ReadingProgresses => Set<ReadingProgress>();
     public DbSet<ReadingLog> ReadingLogs => Set<ReadingLog>();

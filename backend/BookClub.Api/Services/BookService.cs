@@ -118,27 +118,25 @@ public class BookService
         public List<string>? Publishers { get; set; }
     }
 
-    public async Task<CreateBookResult> CreateAsync(
+    public async Task<CreateBookResult> CreateBookAsync(
         string externalId,
-        string? isbn10,
-        string? isbn13,
         string title,
-        string? author)
+        string? author,
+        CancellationToken cancellationToken = default)
     {
         var existing = await _dbContext.Books
             .FirstOrDefaultAsync(b =>
-                b.ExternalId == externalId);
+                b.ExternalId == externalId,
+                cancellationToken);
 
         if (existing is not null)
         {
-            return new CreateBookResult(ToDto(existing), false);
+            return new CreateBookResult(ToBookDto(existing), false);
         }
 
         var entry = new Book
         {
             ExternalId = externalId,
-            Isbn10 = isbn10,
-            Isbn13 = isbn13,
             Title = title,
             Author = author
         };
@@ -146,8 +144,7 @@ public class BookService
         _dbContext.Books.Add(entry);
         await _dbContext.SaveChangesAsync();
 
-        return new CreateBookResult(ToDto(entry), true);
-
+        return new CreateBookResult(ToBookDto(entry), true);
     }
 
     public async Task<bool> DeleteAsync(int id)
@@ -165,16 +162,31 @@ public class BookService
         return true;
     }
 
-    public async Task<GetBookDto?> GetAsync(int id)
+    public async Task<GetBookDto?> GetBookAsync(int id,
+    CancellationToken cancellationToken = default)
     {
-        var existing = await _dbContext.Books.FindAsync(id);
+        var existing = await _dbContext.Books
+        .FirstOrDefaultAsync(
+            b => b.Id == id,
+            cancellationToken);
 
         if (existing is null)
         {
             return null;
         }
 
-        return ToDto(existing);
+        return ToBookDto(existing);
+    }
+
+    public async Task<List<GetBookEditionDto>> GetEditionAsync(
+    int EditionId,
+    CancellationToken cancellationToken = default)
+    {
+    var editions = await _dbContext.BookEditions
+        .Where(e => e.EditionId == EditionId)
+        .ToListAsync(cancellationToken);
+
+    return editions.Select(ToBookEditionDto).ToList();
     }
 
     private static string EscapeSearchQuery(string query)
@@ -199,16 +211,32 @@ public class BookService
         );
     }
 
-    private static GetBookDto ToDto(Book entry)
+    private static GetBookDto ToBookDto(Book entry)
     {
         return new GetBookDto
         {
             Id = entry.Id,
             ExternalId = entry.ExternalId,
-            Isbn10 = entry.Isbn10,
-            Isbn13 = entry.Isbn13,
             Title = entry.Title,
             Author = entry.Author
         };
     }
+
+    private static GetBookEditionDto ToBookEditionDto(BookEdition entry)
+    {
+        return new GetBookEditionDto
+        {
+            Id = entry.Id,
+            ExternalId = entry.ExternalId,
+            WorkExternalId = entry.ExternalId,
+            Title = entry.Title,
+            Author = entry.Author,
+            Isbn10 = entry.Isbn10,
+            Isbn13 = entry.Isbn13,
+            TotalPageCount = entry.TotalPageCount,
+            Publisher = entry.Publisher,
+            PublishDate = entry.PublishDate,
+            CoverUrl = entry.CoverUrl
+        };
+    }   
 }

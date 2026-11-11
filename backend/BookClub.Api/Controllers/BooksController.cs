@@ -36,13 +36,11 @@ public class BooksController : ControllerBase
         return Ok(books);
     }
     [HttpPost]
-    public async Task<IActionResult> CreateAsync(
+    public async Task<IActionResult> CreateBookAsync(
         CreateBookDto request)
     {
-        var result = await _bookService.CreateAsync(
+        var result = await _bookService.CreateBookAsync(
             request.ExternalId,
-            request.Isbn10,
-            request.Isbn13,
             request.Title,
             request.Author);
 
@@ -70,7 +68,7 @@ public class BooksController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
-        var entry = await _bookService.GetAsync(id);
+        var entry = await _bookService.GetBookAsync(id);
 
         if (entry is null)
         {
