@@ -1,23 +1,20 @@
+
 namespace BookClub.Api.Models;
 
-public readonly record struct BookRating : IComparable<BookRating>
+public class BookRatingEntry
 {
-    public int Value { get; }
+    public int Id { get; set; }
 
-    public BookRating(int value)
-    {
-        if (value < 1 || value > 5)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(value),
-                "Rating must be between 1 and 5.");
-        }
+    // Required relationship to the book
+    public int BookId { get; set; }
+    public Book Book { get; set; } = null!;
 
-        Value = value;
-    }
+    // Optional relationship to a specific edition
+    public int? BookEditionId { get; set; }
+    public BookEdition? BookEdition { get; set; }
 
-    public int CompareTo(BookRating other)
-    {
-        return Value.CompareTo(other.Value);
-    }
+    public int Rating { get; set; }
+    public string? Review { get; set; }
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
