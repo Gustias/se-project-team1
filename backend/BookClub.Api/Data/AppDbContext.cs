@@ -10,10 +10,18 @@ public class AppDbContext : DbContext
     {
         Configuration = configuration;
     }
+    
+    internal AppDbContext(DbContextOptions<AppDbContext> options) : base(options) // second constructor is used for the unit tests
+    {
+        Configuration = null!;
+    }
 
     protected override void OnConfiguring(DbContextOptionsBuilder options)
     {
-        options.UseNpgsql(Configuration.GetConnectionString("ConnectionString"));
+        if (!options.IsConfigured)
+        {
+            options.UseNpgsql(Configuration.GetConnectionString("ConnectionString"));
+        }
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
