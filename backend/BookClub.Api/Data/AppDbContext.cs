@@ -40,8 +40,20 @@ public class AppDbContext : DbContext
                 "\"EndPage\" >= \"StartPage\""));
 
         modelBuilder.Entity<Book>()
+            .HasKey(b => b.Id);
+
+        modelBuilder.Entity<Book>()
             .HasIndex(b => b.ExternalId)
             .IsUnique();
+        
+        modelBuilder.Entity<BookEdition>()
+            .HasKey(e => e.EditionId);
+
+        modelBuilder.Entity<Book>()
+            .HasMany(b => b.Editions)
+            .WithOne(e => e.Book)
+            .HasForeignKey(e => e.BookId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<BookRatingEntry>(entity =>
         {
