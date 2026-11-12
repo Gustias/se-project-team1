@@ -20,6 +20,15 @@ builder.Services.AddHttpClient<BookService>(client =>
     );
 });
 
+builder.Services.AddHttpClient<OpenLibraryService>(client =>
+{
+    client.BaseAddress = new Uri("https://openlibrary.org/");
+
+    client.DefaultRequestHeaders.UserAgent.ParseAdd(
+        "BookClubApp"
+    );
+});
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactApp", policy =>
