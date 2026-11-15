@@ -1,11 +1,12 @@
 using BookClub.Api.Data;
 using BookClub.Api.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
-builder.Services.AddDbContext<AppDbContext>();
+builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(builder.Configuration.GetConnectionString("ConnectionString")));
 builder.Services.AddScoped<BookService>();
 builder.Services.AddScoped<ReadingProgressService>();
 builder.Services.AddScoped<BookRatingService>();

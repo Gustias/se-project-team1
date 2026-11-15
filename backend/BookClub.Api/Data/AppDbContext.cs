@@ -4,25 +4,8 @@ namespace BookClub.Api.Data;
 
 public class AppDbContext : DbContext
 {
-    protected readonly IConfiguration Configuration;
 
-    public AppDbContext(IConfiguration configuration)
-    {
-        Configuration = configuration;
-    }
-    
-    internal AppDbContext(DbContextOptions<AppDbContext> options) : base(options) // second constructor is used for the unit tests
-    {
-        Configuration = null!;
-    }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder options)
-    {
-        if (!options.IsConfigured)
-        {
-            options.UseNpgsql(Configuration.GetConnectionString("ConnectionString"));
-        }
-    }
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
