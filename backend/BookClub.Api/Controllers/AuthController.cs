@@ -8,6 +8,7 @@ namespace BookClub.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
+[AutoValidateAntiforgeryToken]
 public class AuthController : ControllerBase
 {
     private readonly UserManager<User> _userManager;

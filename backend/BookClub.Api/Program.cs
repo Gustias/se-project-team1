@@ -2,10 +2,15 @@ using BookClub.Api.Data;
 using BookClub.Api.Services;
 using BookClub.Api.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+{
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+});
 
 builder.Services.AddDbContext<AppDbContext>();
 builder.Services
@@ -67,6 +72,10 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+});
 
 var app = builder.Build();
 
@@ -76,6 +85,15 @@ app.UseCors("ReactApp");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapGet("/api/auth/csrf", (IAntiforgery antiforgery, HttpContext context) =>
+{
+    var tokens = antiforgery.GetAndStoreTokens(context);
+
+    context.Response.Headers.CacheControl = "no-store";
+
+    return Results.Ok(new { token = tokens.RequestToken });
+});
 
 app.MapControllers();
 
