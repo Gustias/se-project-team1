@@ -1,5 +1,53 @@
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+export async function getCsrfToken() {
+  const response = await fetch(`${BASE_URL}/api/auth/csrf`, {
+    credentials: "include",
+  });
+
+  const data = await handle(response);
+  return data.token;
+}
+
+export async function register(userName, email, password) {
+  const csrfToken = await getCsrfToken();
+
+  const response = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+    },
+    body: JSON.stringify({
+      userName,
+      email,
+      password,
+    }),
+  });
+
+  return handle(response);
+}
+
+export async function login(email, password) {
+  const csrfToken = await getCsrfToken();
+
+  const response = await fetch(`${BASE_URL}/api/auth/login`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+    },
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  });
+
+  return handle(response);
+}
+
 export async function handle(response) {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
