@@ -2,6 +2,7 @@ using BookClub.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using BookClub.Api.Dtos;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookClub.Api.Controllers;
 
@@ -77,6 +78,34 @@ public class AuthController : ControllerBase
         return Ok(new
         {
             Message = "Logged in successfully."
+        });
+    }
+
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        await _signInManager.SignOutAsync();
+
+        return Ok(new { message = "Logged out successfully." });
+    }
+
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IActionResult> Me()
+    {
+        var user = await _userManager.GetUserAsync(User);
+
+        if (user == null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(new
+        {
+            user.Id,
+            user.UserName,
+            user.Email
         });
     }
 }
