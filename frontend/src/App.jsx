@@ -1,6 +1,7 @@
 import BookSearch from "./components/BookSearch.jsx";
 import ReadingStats from "./components/ReadingStats.jsx";
 import {NavLink, Route, Routes} from "react-router-dom";
+import Login from "./components/Login.jsx";
 
 
 
@@ -15,12 +16,14 @@ function App() {
         <nav>
           <NavLink to="/" end>Search</NavLink>
           <NavLink to="/stats">Stats</NavLink>
+          <NavLink to="/login">Login</NavLink>
         </nav>
       </header>
 
       <Routes>
         <Route path="/" element={<BookSearch />} />
         <Route path="/stats" element={<ReadingStats />} />
+        <Route path="/login" element={<Login />} />
       </Routes>
 
     </main>
