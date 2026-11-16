@@ -48,6 +48,32 @@ export async function login(email, password) {
   return handle(response);
 }
 
+export async function logout() {
+  const csrfToken = await getCsrfToken();
+
+  const response = await fetch(`${BASE_URL}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "X-CSRF-TOKEN": csrfToken,
+    },
+  });
+
+  return handle(response);
+}
+
+export async function getCurrentUser() {
+  const response = await fetch(`${BASE_URL}/api/auth/me`, {
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  return handle(response);
+}
+
 export async function handle(response) {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
