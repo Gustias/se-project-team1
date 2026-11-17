@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, getCurrentUser } from "../api/client.js";
 
-function Login() {
+function Login({ onLogin }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -23,7 +23,9 @@ function Login() {
         throw new Error("Could not verify the login.");
       }
 
+      onLogin(user);
       navigate("/");
+      
     } catch (err) {
       setError(err.message);
     } finally {
