@@ -77,14 +77,21 @@ export async function getCurrentUser() {
 export async function handle(response) {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
+
     try {
       const body = await response.json();
-      message = body.message || body.title || message;
+
+      if(Array.isArray(body.errors) && body.errors.length > 0) {
+        message = body.errors.join(" ");
+      } else {
+        message = body.message || body.title || message;
+      }
     } catch {
       // response had no JSON body
     }
     throw new Error(message);
   }
+  
   if (response.status === 204) return null;
   return response.json();
 }
