@@ -8,7 +8,7 @@ namespace BookClub.Api.Services;
 public class BookService
 {
     private readonly AppDbContext _dbContext;
-    public BookService(AppDbContext dbContext, HttpClient httpClient)
+    public BookService(AppDbContext dbContext)
     {
         _dbContext = dbContext;
     }
