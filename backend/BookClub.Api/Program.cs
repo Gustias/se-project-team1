@@ -86,15 +86,6 @@ app.UseCors("ReactApp");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapGet("/api/auth/csrf", (IAntiforgery antiforgery, HttpContext context) =>
-{
-    var tokens = antiforgery.GetAndStoreTokens(context);
-
-    context.Response.Headers.CacheControl = "no-store";
-
-    return Results.Ok(new { token = tokens.RequestToken });
-});
-
 app.MapControllers();
 
 app.Run();

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using BookClub.Api.Dtos;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Antiforgery;
 
 namespace BookClub.Api.Controllers;
 
@@ -13,13 +14,25 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
-
+    private readonly IAntiforgery _antiforgery;
     public AuthController(
         UserManager<User> userManager,
-        SignInManager<User> signInManager)
+        SignInManager<User> signInManager,
+        IAntiforgery antiforgery)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _antiforgery = antiforgery;
+    }
+
+    [HttpGet("csrf")]
+    [AllowAnonymous]
+    public IActionResult GetCsrfToken()
+    {
+        var tokens = _antiforgery.GetAndStoreTokens(HttpContext);
+        Response.Headers.CacheControl = "no-store";
+
+        return Ok(new { token = tokens.RequestToken });
     }
 
     [HttpPost("register")]
