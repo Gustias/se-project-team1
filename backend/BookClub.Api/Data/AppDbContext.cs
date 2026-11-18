@@ -7,17 +7,8 @@ namespace BookClub.Api.Data;
 
 public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 {
-    protected readonly IConfiguration Configuration;
 
-    public AppDbContext(IConfiguration configuration)
-    {
-        Configuration = configuration;
-    }
-
-    protected override void OnConfiguring(DbContextOptionsBuilder options)
-    {
-        options.UseNpgsql(Configuration.GetConnectionString("ConnectionString"));
-    }
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

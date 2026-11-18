@@ -1,5 +1,6 @@
 using BookClub.Api.Data;
 using BookClub.Api.Services;
+using Microsoft.EntityFrameworkCore;
 using BookClub.Api.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Antiforgery;
@@ -12,7 +13,7 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 });
 
-builder.Services.AddDbContext<AppDbContext>();
+builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(builder.Configuration.GetConnectionString("ConnectionString")));
 builder.Services
     .AddIdentity<User, IdentityRole<int>>(options =>
     {
