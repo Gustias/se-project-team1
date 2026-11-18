@@ -23,10 +23,16 @@ public class OpenLibraryService
         CancellationToken cancellationToken = default)
     {
         var normalizedQuery = query.Trim();
-        if (_cache.TryGet(normalizedQuery, out var cachedResults))
-        {
-            return cachedResults;
-        }
+
+        return await _cache.GetOrCreateAsync(
+            normalizedQuery,
+            () => FetchBooksFromOpenLibraryAsync(normalizedQuery),
+            cancellationToken);
+    }
+
+    private async Task<List<BookSearchResultDto>> FetchBooksFromOpenLibraryAsync(
+        string normalizedQuery)
+    {
         var escapedQuery = EscapeSearchQuery(normalizedQuery);
 
         var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
@@ -35,28 +41,23 @@ public class OpenLibraryService
         var url = $"search.json?q={encodedQuery}&limit=100" +
             "&fields=key,title,author_name,cover_i,first_publish_year,isbn,publisher";
 
-        using var response =
-            await _httpClient.GetAsync(url, cancellationToken);
+        using var response = await _httpClient.GetAsync(url);
 
         response.EnsureSuccessStatusCode();
 
         await using var stream =
-            await response.Content.ReadAsStreamAsync(cancellationToken);
+            await response.Content.ReadAsStreamAsync();
 
         var openLibraryResponse =
             await JsonSerializer.DeserializeAsync<OpenLibrarySearchResponse>(
-                stream,
-                cancellationToken: cancellationToken);
+                stream);
 
         if (openLibraryResponse?.Docs == null)
         {
-            var emptyResults = new List<BookSearchResultDto>();
-            _cache.Set(normalizedQuery, emptyResults);
-
-            return emptyResults;
+            return new List<BookSearchResultDto>();
         }
 
-        var results = openLibraryResponse.Docs
+        return openLibraryResponse.Docs
             .Where(book => !string.IsNullOrWhiteSpace(book.Title))
             .Where(book =>
                 book.Title!.Contains(
@@ -92,10 +93,6 @@ public class OpenLibraryService
                 };
             })
             .ToList();
-
-        _cache.Set(normalizedQuery, results);
-
-        return results;
     }
 
     private static string EscapeSearchQuery(string query)
