@@ -1,15 +1,20 @@
 using BookClub.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+
 namespace BookClub.Api.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext<User, IdentityRole<int>, int>
 {
 
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Checks to prevent duplicates.
+
+        base.OnModelCreating(modelBuilder);
+
         modelBuilder.Entity<ReadingProgress>()
             .HasIndex(rp => new
             {
@@ -25,6 +30,7 @@ public class AppDbContext : DbContext
                 rl.BookId,
                 rl.Date
             });
+
         modelBuilder.Entity<ReadingLog>()
             .ToTable(t => t.HasCheckConstraint(
                 "CK_ReadingLogs_Pages",
@@ -60,7 +66,6 @@ public class AppDbContext : DbContext
     }
 
     public DbSet<Book> Books => Set<Book>();
-    public DbSet<User> Users => Set<User>();
     public DbSet<ReadingProgress> ReadingProgresses => Set<ReadingProgress>();
     public DbSet<ReadingLog> ReadingLogs => Set<ReadingLog>();
     public DbSet<BookRatingEntry> BookRatingEntries => Set<BookRatingEntry>();
