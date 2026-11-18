@@ -8,10 +8,14 @@ namespace BookClub.Api.Controllers;
 [Route("api/books")]
 public class BooksController : ControllerBase
 {
+    private readonly OpenLibraryService _openLibraryService;    
     private readonly BookService _bookService;
-    public BooksController(BookService bookService)
+    public BooksController(
+        BookService bookService,
+        OpenLibraryService openLibraryService)
     {
         _bookService = bookService;
+        _openLibraryService = openLibraryService;
     }
 
     [HttpGet("search")]
@@ -31,7 +35,9 @@ public class BooksController : ControllerBase
             return BadRequest("Search query must be 100 characters or fewer.");
         }
 
-        var books = await _bookService.SearchBooksAsync(query, cancellationToken);
+        var books = await _openLibraryService.SearchBooksAsync(
+            query,
+            cancellationToken);
 
         return Ok(books);
     }
