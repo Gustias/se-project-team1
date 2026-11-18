@@ -29,7 +29,7 @@ public class BookServiceTests //only tests the database related stuff, doesn't t
         CreateMockBookEntry(context);
         context.SaveChanges();
 
-        var service = new BookService(context, new HttpClient());
+        var service = new BookService(context);
         var result = await service.CreateAsync("externalId", "isbn10", "isbn13", "title", "author");
 
         Assert.False(result.Created);
@@ -40,7 +40,7 @@ public class BookServiceTests //only tests the database related stuff, doesn't t
     {
         using var context = CreateContext();
 
-        var service = new BookService(context, new HttpClient());
+        var service = new BookService(context);
         var result = await service.CreateAsync("externalId", "isbn10", "isbn13", "title", "author");
 
         Assert.Single(context.Books);
@@ -57,7 +57,7 @@ public class BookServiceTests //only tests the database related stuff, doesn't t
     {
         using var context = CreateContext();
 
-        var service = new BookService(context, new HttpClient());
+        var service = new BookService(context);
         var result = await service.DeleteAsync(1);
 
         Assert.False(result);
@@ -71,7 +71,7 @@ public class BookServiceTests //only tests the database related stuff, doesn't t
         CreateMockBookEntry(context);
         context.SaveChanges();
 
-        var service = new BookService(context, new HttpClient());
+        var service = new BookService(context);
         var result = await service.DeleteAsync(1);
 
         Assert.True(result);
@@ -83,7 +83,7 @@ public class BookServiceTests //only tests the database related stuff, doesn't t
     {
         using var context = CreateContext();
 
-        var service = new BookService(context, new HttpClient());
+        var service = new BookService(context);
         var result = await service.GetAsync(1);
 
         Assert.Null(result);
@@ -96,7 +96,7 @@ public class BookServiceTests //only tests the database related stuff, doesn't t
         CreateMockBookEntry(context);
         await context.SaveChangesAsync();
 
-        var service = new BookService(context, new HttpClient());
+        var service = new BookService(context);
         var result = await service.GetAsync(1);
 
         Assert.NotNull(result);
