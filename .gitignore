@@ -3,6 +3,7 @@ bin/
 obj/
 .vs/
 .idea/
+frontend/.cert/
 
 # Node / React
 node_modules/

@@ -25,6 +25,21 @@ The backend already supports real book search through Open Library and reading-p
 - DTO-based API responses
 - React development CORS configuration
 - .NET User Secrets for database credentials
+- User registration, login, and logout using ASP.NET Core Identity
+- Cookie-based authentication
+- CSRF protection
+
+## Current Frontend Features
+
+- Book search using Open Library
+- Book details and cover images
+- Adding books to a personal reading list
+- Changing reading status
+- Rating books from 1 to 5
+- User registration and login pages
+- Logout functionality
+- Displaying the logged-in user's name
+- Keeping users logged in after refreshing the page
 
 ## Planned Features
 
@@ -110,7 +125,7 @@ se-project/
 │   │   ├── App.jsx
 │   │   ├── index.css
 │   │   └── main.jsx
-│   ├── index.html 
+│   ├── index.html
 │   └── package.json
 │
 ├── docs/
@@ -136,12 +151,12 @@ Example:
 
 ```json
 [
-  {
-    "externalId": "/works/OL...",
-    "title": "Dune",
-    "author": "Frank Herbert",
-    "coverUrl": "https://covers.openlibrary.org/b/id/..."
-  }
+    {
+        "externalId": "/works/OL...",
+        "title": "Dune",
+        "author": "Frank Herbert",
+        "coverUrl": "https://covers.openlibrary.org/b/id/..."
+    }
 ]
 ```
 
@@ -157,6 +172,19 @@ DELETE /api/reading-progress/{id}
 ```
 
 Full API documentation is available in [docs/api.md](docs/api.md).
+
+### Authentication
+
+```text
+POST /api/auth/register
+POST /api/auth/login
+POST /api/auth/logout
+GET  /api/auth/me
+GET  /api/auth/csrf
+```
+
+Users can register, log in, and log out.
+Authentication uses cookies to keep users logged in.
 
 ## Running the Backend
 
@@ -190,24 +218,45 @@ The connection string must not be committed to the repository.
 ```bash
 dotnet restore
 dotnet build
-dotnet run
+dotnet run --launch-profile https
 ```
 
-The local ASP.NET Core port may differ depending on the environment.
+Authentication requires HTTPS during local development.
+
+The backend runs at:
+https://localhost:7211
 
 ## Running the Frontend
+
+Navigate to the frontend folder:
 
 ```bash
 cd frontend
 npm install
+```
+
+Create a `.env` file with:
+
+```env
+VITE_API_BASE_URL=https://localhost:7211
+```
+
+The frontend uses HTTPS for authentication. Local development requires a trusted HTTPS certificate.
+
+The Vite configuration expects certificate files in:
+
+- `frontend/.cert/localhost.pem`
+- `frontend/.cert/localhost.key`
+
+These files are not committed to Git and must be generated locally.
+
+Start the frontend:
+
+```bash
 npm run dev
 ```
 
-The development frontend is expected to run on:
-
-```text
-http://localhost:5173
-```
+The frontend runs at `https://localhost:5173` when HTTPS is configured.
 
 The backend CORS policy allows requests from this origin.
 
@@ -222,6 +271,19 @@ backend/BookClub.Api/Data/
 The project uses Entity Framework Core with PostgreSQL.
 
 Application-specific data belongs in the database. The project does not copy the complete Open Library catalog into PostgreSQL.
+
+### Authentication Database Changes
+
+ASP.NET Core Identity is used to store user accounts.
+
+The Identity migration renames the existing `Users` table to
+`AspNetUsers` and creates additional Identity tables.
+
+The migration was tested on a separate Neon database branch
+(`feature/user-authentication`).
+
+Do not apply this migration to the shared Neon database
+until the team is ready to merge and apply these changes.
 
 ## Git Workflow
 
@@ -259,12 +321,12 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full team workflow.
 
 ## Documentation
 
-| Document | Description |
-|---|---|
-| [User Stories](docs/user-stories.md) | User stories |
-| [API Documentation](docs/api.md) | Endpoints, request bodies, responses, and status codes |
-| [Architecture](docs/architecture.md) | High-level application structure and responsibilities |
-| [Contributing](CONTRIBUTING.md) | Branches, commits, Pull Requests, and review workflow |
+| Document                             | Description                                            |
+| ------------------------------------ | ------------------------------------------------------ |
+| [User Stories](docs/user-stories.md) | User stories                                           |
+| [API Documentation](docs/api.md)     | Endpoints, request bodies, responses, and status codes |
+| [Architecture](docs/architecture.md) | High-level application structure and responsibilities  |
+| [Contributing](CONTRIBUTING.md)      | Branches, commits, Pull Requests, and review workflow  |
 
 Documentation should be updated in the same Pull Request whenever API contracts, setup requirements, or architecture change.
 

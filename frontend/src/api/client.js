@@ -1,16 +1,97 @@
 export const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+export async function getCsrfToken() {
+  const response = await fetch(`${BASE_URL}/api/auth/csrf`, {
+    credentials: "include",
+  });
+
+  const data = await handle(response);
+  return data.token;
+}
+
+export async function register(userName, email, password) {
+  const csrfToken = await getCsrfToken();
+
+  const response = await fetch(`${BASE_URL}/api/auth/register`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+    },
+    body: JSON.stringify({
+      userName,
+      email,
+      password,
+    }),
+  });
+
+  return handle(response);
+}
+
+export async function login(email, password) {
+  const csrfToken = await getCsrfToken();
+
+  const response = await fetch(`${BASE_URL}/api/auth/login`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+    },
+    body: JSON.stringify({
+      email,
+      password,
+    }),
+  });
+
+  return handle(response);
+}
+
+export async function logout() {
+  const csrfToken = await getCsrfToken();
+
+  const response = await fetch(`${BASE_URL}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "X-CSRF-TOKEN": csrfToken,
+    },
+  });
+
+  return handle(response);
+}
+
+export async function getCurrentUser() {
+  const response = await fetch(`${BASE_URL}/api/auth/me`, {
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  return handle(response);
+}
+
 export async function handle(response) {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
+
     try {
       const body = await response.json();
-      message = body.message || body.title || message;
+
+      if(Array.isArray(body.errors) && body.errors.length > 0) {
+        message = body.errors.join(" ");
+      } else {
+        message = body.message || body.title || message;
+      }
     } catch {
       // response had no JSON body
     }
     throw new Error(message);
   }
+  
   if (response.status === 204) return null;
   return response.json();
 }

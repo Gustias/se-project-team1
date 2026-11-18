@@ -46,20 +46,20 @@ Format:
 
 Supported prefixes:
 
-| Prefix | Purpose |
-|---|---|
-| `feature/` | New functionality |
-| `fix/` | Bug fixes |
-| `hotfix/` | Urgent fixes |
-| `refactor/` | Internal restructuring |
-| `chore/` | Maintenance or project cleanup |
-| `docs/` | Documentation |
-| `test/` | Tests |
-| `release/` | Release preparation |
-| `ci/` | CI changes |
-| `build/` | Build or dependency changes |
-| `perf/` | Performance improvements |
-| `style/` | Formatting-only changes |
+| Prefix      | Purpose                        |
+| ----------- | ------------------------------ |
+| `feature/`  | New functionality              |
+| `fix/`      | Bug fixes                      |
+| `hotfix/`   | Urgent fixes                   |
+| `refactor/` | Internal restructuring         |
+| `chore/`    | Maintenance or project cleanup |
+| `docs/`     | Documentation                  |
+| `test/`     | Tests                          |
+| `release/`  | Release preparation            |
+| `ci/`       | CI changes                     |
+| `build/`    | Build or dependency changes    |
+| `perf/`     | Performance improvements       |
+| `style/`    | Formatting-only changes        |
 
 Examples:
 
