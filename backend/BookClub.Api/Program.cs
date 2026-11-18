@@ -52,7 +52,7 @@ builder.Services.AddScoped<ReadingProgressService>();
 builder.Services.AddScoped<BookRatingService>();
 builder.Services.AddScoped<ReadingLogService>();
 
-builder.Services.AddHttpClient<BookService>(client =>
+builder.Services.AddHttpClient<OpenLibraryService>(client =>
 {
     client.BaseAddress = new Uri("https://openlibrary.org/");
 
