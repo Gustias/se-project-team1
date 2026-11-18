@@ -8,10 +8,14 @@ namespace BookClub.Api.Services;
 public class OpenLibraryService
 {
     private readonly HttpClient _httpClient;
+    private readonly OpenLibrarySearchCache _cache;
 
-    public OpenLibraryService(HttpClient httpClient)
+    public OpenLibraryService(
+        HttpClient httpClient,
+        OpenLibrarySearchCache cache)
     {
         _httpClient = httpClient;
+        _cache = cache;
     }
 
     public async Task<List<BookSearchResultDto>> SearchBooksAsync(
@@ -19,6 +23,10 @@ public class OpenLibraryService
         CancellationToken cancellationToken = default)
     {
         var normalizedQuery = query.Trim();
+        if (_cache.TryGet(normalizedQuery, out var cachedResults))
+        {
+            return cachedResults;
+        }
         var escapedQuery = EscapeSearchQuery(normalizedQuery);
 
         var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
@@ -42,10 +50,13 @@ public class OpenLibraryService
 
         if (openLibraryResponse?.Docs == null)
         {
-            return new List<BookSearchResultDto>();
+            var emptyResults = new List<BookSearchResultDto>();
+            _cache.Set(normalizedQuery, emptyResults);
+
+            return emptyResults;
         }
 
-        return openLibraryResponse.Docs
+        var results = openLibraryResponse.Docs
             .Where(book => !string.IsNullOrWhiteSpace(book.Title))
             .Where(book =>
                 book.Title!.Contains(
@@ -81,6 +92,10 @@ public class OpenLibraryService
                 };
             })
             .ToList();
+
+        _cache.Set(normalizedQuery, results);
+
+        return results;
     }
 
     private static string EscapeSearchQuery(string query)
