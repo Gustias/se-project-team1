@@ -20,11 +20,20 @@ public class OpenLibraryService
         int limit = 100)
     {
         var normalizedQuery = query.Trim();
-        var escapedQuery = EscapeSearchQuery(normalizedQuery);
+        var isIsbn = TryNormalizeIsbn(normalizedQuery, out var isbnQuery);
 
-        var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
+        string searchQuery;
+        if (isIsbn)
+        {
+            searchQuery = $"isbn:{isbnQuery}";
+        } 
+        else
+        {
+            var escapedQuery = EscapeSearchQuery(normalizedQuery);
+            searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
+        }
+
         var encodedQuery = Uri.EscapeDataString(searchQuery);
-
         var url = $"search.json?q={encodedQuery}&limit={limit}" +
             "&fields=key,title,author_name,cover_i,first_publish_year,isbn,publisher";
 
@@ -46,17 +55,20 @@ public class OpenLibraryService
             return new List<BookSearchResultDto>();
         }
 
-        return openLibraryResponse.Docs
-            .Where(book => !string.IsNullOrWhiteSpace(book.Title))
-            .Where(book =>
-                book.Title!.Contains(
-                    normalizedQuery,
-                    StringComparison.OrdinalIgnoreCase)
-                ||
-                (book.AuthorName?.Any(author =>
-                    author.Contains(
-                        normalizedQuery,
-                        StringComparison.OrdinalIgnoreCase)) ?? false))
+        var docs = openLibraryResponse.Docs
+            .Where(book => !string.IsNullOrWhiteSpace(book.Title));
+
+        // Only apply the text filter for title/author searches
+        if (!isIsbn)
+        {
+            docs = docs.Where(book =>
+            book.Title!.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase)
+            ||
+            (book.AuthorName?.Any(author =>
+                author.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase)) ?? false));
+        }
+
+        return docs
             .Take(30)
             .Select(book =>
             {
@@ -168,6 +180,13 @@ public class OpenLibraryService
             cleaned.FirstOrDefault(i => i.Length == 10),
             cleaned.FirstOrDefault(i => i.Length == 13)
         );
+    }
+
+    private static bool TryNormalizeIsbn(string input, out string isbn)
+    {
+        // Remove hyphens and spaces: "978-0-14-032872-1" -> "9780140328721"
+        isbn = input.Replace("-", "").Replace(" ", "").ToUpperInvariant();
+        return Regex.IsMatch(isbn, @"^(\d{13}|\d{9}[\dX])$");
     }
 
     private class OpenLibrarySearchResponse
