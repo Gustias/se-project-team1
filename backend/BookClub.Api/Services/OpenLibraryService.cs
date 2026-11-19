@@ -16,7 +16,8 @@ public class OpenLibraryService
 
     public async Task<List<BookSearchResultDto>> SearchBooksAsync(
         string query,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        int limit = 100)
     {
         var normalizedQuery = query.Trim();
         var escapedQuery = EscapeSearchQuery(normalizedQuery);
@@ -24,7 +25,7 @@ public class OpenLibraryService
         var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
         var encodedQuery = Uri.EscapeDataString(searchQuery);
 
-        var url = $"search.json?q={encodedQuery}&limit=100" +
+        var url = $"search.json?q={encodedQuery}&limit={limit}" +
             "&fields=key,title,author_name,cover_i,first_publish_year,isbn,publisher";
 
         using var response =
@@ -83,6 +84,66 @@ public class OpenLibraryService
             .ToList();
     }
 
+    public async Task<List<EditionSearchResultDto>?> SearchEditionsAsync(
+    string workId,
+    CancellationToken cancellationToken = default,
+    int limit = 20)
+    {
+        var url = $"works/{Uri.EscapeDataString(workId)}/editions.json" +
+        $"?limit={limit}";
+
+        using var response =
+        await _httpClient.GetAsync(url, cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        await using var stream =
+        await response.Content.ReadAsStreamAsync(cancellationToken);
+
+        var openLibraryResponse =
+        await JsonSerializer.DeserializeAsync<OpenLibraryEditionsResponse>(
+            stream,
+            cancellationToken: cancellationToken);
+
+        if (openLibraryResponse?.Entries == null)
+        {
+            return new List<EditionSearchResultDto>();
+        }
+
+    return openLibraryResponse.Entries
+        .Where(e => !string.IsNullOrWhiteSpace(e.Title))
+        .Select(e =>
+        {
+            var isbn10 = e.Isbn10?.FirstOrDefault();
+            var isbn13 = e.Isbn13?.FirstOrDefault();
+
+            return new EditionSearchResultDto
+            {
+                ExternalId = e.Key?.Split('/').Last() ?? "",
+                WorkExternalId = workId,
+                Title = e.Title ?? "",
+                CoverUrl = e.Covers?.FirstOrDefault(c => c > 0) is int coverId
+                    ? $"https://covers.openlibrary.org/b/id/{coverId}-M.jpg"
+                    : null,
+                PublishDate = e.PublishDate,
+                Isbn10 = isbn10,
+                Isbn13 = isbn13,
+                Publishers = (e.Publishers ?? new List<string>())
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .Take(10)
+                    .ToList(),
+                PageCount = e.NumberOfPages,
+                Language = e.Languages?.FirstOrDefault()?.Key?.Split('/').Last()
+            };
+        })
+        .ToList();
+  }
+
     private static string EscapeSearchQuery(string query)
     {
         return Regex.Replace(
@@ -113,6 +174,48 @@ public class OpenLibraryService
     {
         [JsonPropertyName("docs")]
         public List<OpenLibraryBook> Docs { get; set; } = new();
+    }
+
+    private class OpenLibraryEditionsResponse
+    {
+    [JsonPropertyName("entries")]
+    public List<OpenLibraryEdition>? Entries { get; set; }
+    }
+
+    private class OpenLibraryEdition
+    {
+        [JsonPropertyName("key")]
+        public string? Key { get; set; }
+
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
+
+        [JsonPropertyName("covers")]
+        public List<int>? Covers { get; set; }
+
+        [JsonPropertyName("publish_date")]
+        public string? PublishDate { get; set; }
+
+        [JsonPropertyName("isbn_10")]
+        public List<string>? Isbn10 { get; set; }
+
+        [JsonPropertyName("isbn_13")]
+        public List<string>? Isbn13 { get; set; }
+
+        [JsonPropertyName("publishers")]
+        public List<string>? Publishers { get; set; }
+
+        [JsonPropertyName("number_of_pages")]
+        public int? NumberOfPages { get; set; }
+
+        [JsonPropertyName("languages")]
+        public List<OpenLibraryKeyRef>? Languages { get; set; }
+    }
+
+    private class OpenLibraryKeyRef
+    {
+        [JsonPropertyName("key")]
+        public string? Key { get; set; }
     }
 
     private class OpenLibraryBook
