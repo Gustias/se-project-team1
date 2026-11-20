@@ -3,7 +3,7 @@ using BookClub.Api.DTOs;
 
 namespace BookClub.Api.Services;
 
-public class OpenLibrarySearchCache
+public class OpenLibrarySearchCache : IDisposable
 {
     private readonly ConcurrentDictionary<string, CacheEntry> _entries = new();
 
@@ -12,10 +12,22 @@ public class OpenLibrarySearchCache
         Lazy<Task<List<BookSearchResultDto>>>> _inFlight = new();
 
     private readonly TimeSpan _timeToLive;
+    private readonly Timer _cleanupTimer;
 
-    public OpenLibrarySearchCache(TimeSpan timeToLive)
+    public OpenLibrarySearchCache(
+        TimeSpan timeToLive,
+        TimeSpan? cleanupInterval = null)
     {
         _timeToLive = timeToLive;
+
+        var interval =
+            cleanupInterval ?? TimeSpan.FromMinutes(5);
+
+        _cleanupTimer = new Timer(
+            _ => RemoveExpiredEntries(),
+            null,
+            interval,
+            interval);
     }
 
     public bool TryGet(
@@ -32,7 +44,10 @@ public class OpenLibrarySearchCache
                 return true;
             }
 
-            _entries.TryRemove(key, out _);
+            _entries.TryRemove(
+                new KeyValuePair<string, CacheEntry>(
+                    key,
+                    entry));
         }
 
         results = new List<BookSearchResultDto>();
@@ -109,6 +124,19 @@ public class OpenLibrarySearchCache
         return results;
     }
 
+    private void RemoveExpiredEntries()
+    {
+        var now = DateTimeOffset.UtcNow;
+
+        foreach (var entry in _entries)
+        {
+            if (entry.Value.ExpiresAt <= now)
+            {
+                _entries.TryRemove(entry);
+            }
+        }
+    }
+
     private static string NormalizeKey(string query)
     {
         return string.Join(
@@ -117,6 +145,12 @@ public class OpenLibrarySearchCache
                     ' ',
                     StringSplitOptions.RemoveEmptyEntries))
             .ToLowerInvariant();
+    }
+
+    public void Dispose()
+    {
+        _cleanupTimer.Dispose();
+        GC.SuppressFinalize(this);
     }
 
     private sealed record CacheEntry(

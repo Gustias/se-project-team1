@@ -58,8 +58,10 @@ builder.Services.AddScoped<ReadingProgressService>();
 builder.Services.AddScoped<BookRatingService>();
 builder.Services.AddScoped<ReadingLogService>();
 
-builder.Services.AddSingleton(
-    new OpenLibrarySearchCache(TimeSpan.FromMinutes(15)));
+builder.Services.AddSingleton<OpenLibrarySearchCache>(_ =>
+    new OpenLibrarySearchCache(
+        TimeSpan.FromMinutes(15),
+        TimeSpan.FromMinutes(5)));
 
 builder.Services.AddHttpClient<OpenLibraryService>(client =>
 {
