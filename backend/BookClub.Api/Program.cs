@@ -1,7 +1,8 @@
 using BookClub.Api.Data;
 using BookClub.Api.Services;
-using Microsoft.EntityFrameworkCore;
 using BookClub.Api.Models;
+using BookClub.Api.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Mvc;
@@ -58,6 +59,9 @@ builder.Services.AddScoped<ReadingProgressService>();
 builder.Services.AddScoped<BookRatingService>();
 builder.Services.AddScoped<ReadingLogService>();
 
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 builder.Services.AddSingleton<OpenLibrarySearchCache>(_ =>
     new OpenLibrarySearchCache(
         TimeSpan.FromMinutes(15),
@@ -87,6 +91,8 @@ builder.Services.AddAntiforgery(options =>
 });
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 
