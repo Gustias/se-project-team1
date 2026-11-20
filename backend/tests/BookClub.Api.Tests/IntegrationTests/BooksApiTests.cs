@@ -1,47 +1,15 @@
 using System.Net;
 using System.Net.Http.Json;
 using BookClub.Api.DTOs;
-using Microsoft.AspNetCore.Mvc.Testing;
 
 namespace BookClub.Api.Tests.IntegrationTests;
 
+[Trait("Category", "Integration")]
 public class BooksApiTests : IClassFixture<ApiFactory>
 {
-    private readonly HttpClient _client;
+    private readonly ApiTestClient _api;
 
-    public BooksApiTests(ApiFactory factory)
-    {
-        _client = factory.CreateClient(
-            new WebApplicationFactoryClientOptions
-            {
-                BaseAddress = new Uri("https://localhost")
-            });
-    }
-
-    private async Task<HttpResponseMessage> PostWithCsrfAsync( // create custom POST to send requests with CSRF token
-        string url,
-        object body)
-    {
-        // Obtain CSRF token and antiforgery cookie.
-        var csrf = await _client.GetFromJsonAsync<CsrfTokenResponse>(
-            "/api/auth/csrf");
-
-        Assert.NotNull(csrf);
-
-        using var request = new HttpRequestMessage(HttpMethod.Post, url)
-        {
-            Content = JsonContent.Create(body)
-        };
-
-        request.Headers.Add("X-CSRF-TOKEN", csrf.Token);
-
-        return await _client.SendAsync(request);
-    }
-
-    private class CsrfTokenResponse
-    {
-        public string Token { get; set; } = "";
-    }
+    public BooksApiTests(ApiFactory factory) => _api = new ApiTestClient(factory);
 
     [Fact]
     public async Task Create_ThenGet_ReturnsTheSameBook()
@@ -53,14 +21,12 @@ public class BooksApiTests : IClassFixture<ApiFactory>
             author = "Frank Herbert"
         };
 
-        using var created = await PostWithCsrfAsync(
-            "/api/books", body);
+        using var created = await _api.PostAsync("/api/books", body);
 
         Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         Assert.NotNull(created.Headers.Location);
 
-        var fetched = await _client.GetFromJsonAsync<GetBookDto>(
-            created.Headers.Location);
+        var fetched = await _api.Http.GetFromJsonAsync<GetBookDto>(created.Headers.Location);
 
         Assert.NotNull(fetched);
         Assert.Equal("Dune", fetched.Title);
@@ -68,18 +34,21 @@ public class BooksApiTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Create_WhenTitleIsEmpty_Returns400()
+    public async Task Create_WhenTitleIsEmpty_Returns400_BecauseOfTitleValidation()
     {
         var body = new
         {
-            externalId = "x",
+            externalId = Guid.NewGuid().ToString(),
             title = "",
             author = "Frank Herbert"
         };
 
-        using var response = await PostWithCsrfAsync(
-            "/api/books", body);
+        using var response = await _api.PostAsync("/api/books", body);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        // the 400 must be about the title, not some other problem with the request
+        var content = await response.Content.ReadAsStringAsync();
+        Assert.Contains("title", content, StringComparison.OrdinalIgnoreCase);
     }
 }
