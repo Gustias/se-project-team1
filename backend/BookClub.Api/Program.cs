@@ -13,7 +13,10 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
 });
 
-builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(builder.Configuration.GetConnectionString("ConnectionString")));
+builder.Services.AddDbContext<AppDbContext>(o =>
+    o.UseNpgsql(
+        builder.Configuration.GetConnectionString("ConnectionString")));
+
 builder.Services
     .AddIdentity<User, IdentityRole<int>>(options =>
     {
@@ -27,6 +30,7 @@ builder.Services
     })
     .AddEntityFrameworkStores<AppDbContext>()
     .AddDefaultTokenProviders();
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.Cookie.HttpOnly = true;
@@ -48,18 +52,21 @@ builder.Services.ConfigureApplicationCookie(options =>
         return Task.CompletedTask;
     };
 });
+
 builder.Services.AddScoped<BookService>();
 builder.Services.AddScoped<ReadingProgressService>();
 builder.Services.AddScoped<BookRatingService>();
 builder.Services.AddScoped<ReadingLogService>();
 
+builder.Services.AddSingleton<OpenLibrarySearchCache>(_ =>
+    new OpenLibrarySearchCache(
+        TimeSpan.FromMinutes(15),
+        TimeSpan.FromMinutes(5)));
+
 builder.Services.AddHttpClient<OpenLibraryService>(client =>
 {
     client.BaseAddress = new Uri("https://openlibrary.org/");
-
-    client.DefaultRequestHeaders.UserAgent.ParseAdd(
-        "BookClubApp"
-    );
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("BookClubApp");
 });
 
 builder.Services.AddCors(options =>
@@ -67,12 +74,13 @@ builder.Services.AddCors(options =>
     options.AddPolicy("ReactApp", policy =>
     {
         policy
-            .WithOrigins("https://localhost:5173")
+            .WithOrigins("http://localhost:5173")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
     });
 });
+
 builder.Services.AddAntiforgery(options =>
 {
     options.HeaderName = "X-CSRF-TOKEN";

@@ -8,10 +8,14 @@ namespace BookClub.Api.Services;
 public class OpenLibraryService
 {
     private readonly HttpClient _httpClient;
+    private readonly OpenLibrarySearchCache _cache;
 
-    public OpenLibraryService(HttpClient httpClient)
+    public OpenLibraryService(
+        HttpClient httpClient,
+        OpenLibrarySearchCache cache)
     {
         _httpClient = httpClient;
+        _cache = cache;
     }
 
     public async Task<List<BookSearchResultDto>> SearchBooksAsync(
@@ -19,6 +23,16 @@ public class OpenLibraryService
         CancellationToken cancellationToken = default)
     {
         var normalizedQuery = query.Trim();
+
+        return await _cache.GetOrCreateAsync(
+            normalizedQuery,
+            () => FetchBooksFromOpenLibraryAsync(normalizedQuery),
+            cancellationToken);
+    }
+
+    private async Task<List<BookSearchResultDto>> FetchBooksFromOpenLibraryAsync(
+        string normalizedQuery)
+    {
         var escapedQuery = EscapeSearchQuery(normalizedQuery);
 
         var searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
@@ -27,18 +41,16 @@ public class OpenLibraryService
         var url = $"search.json?q={encodedQuery}&limit=100" +
             "&fields=key,title,author_name,cover_i,first_publish_year,isbn,publisher";
 
-        using var response =
-            await _httpClient.GetAsync(url, cancellationToken);
+        using var response = await _httpClient.GetAsync(url);
 
         response.EnsureSuccessStatusCode();
 
         await using var stream =
-            await response.Content.ReadAsStreamAsync(cancellationToken);
+            await response.Content.ReadAsStreamAsync();
 
         var openLibraryResponse =
             await JsonSerializer.DeserializeAsync<OpenLibrarySearchResponse>(
-                stream,
-                cancellationToken: cancellationToken);
+                stream);
 
         if (openLibraryResponse?.Docs == null)
         {
