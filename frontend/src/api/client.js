@@ -198,3 +198,52 @@ export async function getReadingSummary(userId, from, to){
   const response = await fetch(`${BASE_URL}/api/reading-log/summary/${userId}?from=${from}&to=${to}`);
   return handle(response);
 }
+
+// ---- Open Library (work details + editions) ----
+const OPEN_LIBRARY_URL = "https://openlibrary.org";
+
+// externalId may be "OL45883W" or "/works/OL45883W" - always return "OL45883W"
+export function toWorkId(externalId) {
+  return String(externalId).replace(/^\/?works\//, "");
+}
+
+export async function getWork(externalId, signal) {
+  const response = await fetch(
+    `${OPEN_LIBRARY_URL}/works/${toWorkId(externalId)}.json`,
+    { signal },
+  );
+  return handle(response);
+}
+
+export async function getWorkEditions(
+  externalId,
+  { limit = 20, offset = 0 } = {},
+  signal,
+) {
+  const response = await fetch(
+    `${OPEN_LIBRARY_URL}/works/${toWorkId(externalId)}/editions.json?limit=${limit}&offset=${offset}`,
+    { signal },
+  );
+  const data = await handle(response);
+
+  return {
+    total: data.size ?? data.entries.length,
+    editions: data.entries.map((e) => ({
+      key: e.key,
+      title: e.title,
+      subtitle: e.subtitle ?? null,
+      publishers: e.publishers ?? [],
+      publishDate: e.publish_date ?? null,
+      pages: e.number_of_pages ?? null,
+      format: e.physical_format ?? null,
+      isbn10: e.isbn_10?.[0] ?? null,
+      isbn13: e.isbn_13?.[0] ?? null,
+      languages: (e.languages ?? []).map((l) => l.key.split("/").pop()),
+      coverUrl: e.covers?.find((id) => id > 0)
+        ? `https://covers.openlibrary.org/b/id/${e.covers.find((id) => id > 0)}-M.jpg`
+        : null,
+      url: `${OPEN_LIBRARY_URL}${e.key}`,
+    })),
+  };
+}
+

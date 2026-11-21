@@ -3,6 +3,7 @@ import ReadingStats from "./components/ReadingStats.jsx";
 import { NavLink, Route, Routes, useNavigate } from "react-router-dom";
 import Login from "./components/Login.jsx";
 import Register from "./components/Register.jsx";
+import BookDetails from "./components/BookDetails.jsx";
 import { useEffect, useState } from "react";
 import { getCurrentUser, logout } from "./api/client.js";
 
@@ -70,6 +71,7 @@ function App() {
 
       <Routes>
         <Route path="/" element={<BookSearch />} />
+        <Route path="/books/:externalId" element={<BookDetails />} />
         <Route path="/stats" element={<ReadingStats />} />
         <Route 
           path="/login" 
