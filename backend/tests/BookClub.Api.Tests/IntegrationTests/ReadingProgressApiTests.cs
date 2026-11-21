@@ -44,7 +44,7 @@ public class ReadingProgressApiTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Create_ForMissingBook_Returns404()
+    public async Task Create_ForMissingBook_Returns409()
     {
         var userId = await _api.RegisterAndLoginAsync();
 
