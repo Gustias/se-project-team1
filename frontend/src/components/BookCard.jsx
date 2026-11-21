@@ -192,6 +192,14 @@ function BookCard({ book }) {
           </>
         )}
 
+        <Link
+          className="view-editions-btn"
+          to={`/books/${encodeURIComponent(client.toWorkId(book.externalId))}`}
+          state={{ book }}
+        >
+          View details
+        </Link>
+
         <div className="reading-list">
           <label>
             Reading status:
