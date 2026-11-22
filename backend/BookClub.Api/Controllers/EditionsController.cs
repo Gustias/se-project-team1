@@ -1,4 +1,3 @@
-using BookClub.Api.DTOs;
 using BookClub.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,6 +7,8 @@ namespace BookClub.Api.Controllers;
 [Route("api/editions")]
 public class EditionsController : ControllerBase
 {
+    private const int MaxLimit = 50;
+
     private readonly OpenLibraryService _openLibraryService;
 
     public EditionsController(
@@ -19,7 +20,9 @@ public class EditionsController : ControllerBase
     [HttpGet("search")]
     public async Task<IActionResult> Search(
         [FromQuery] string workId,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        [FromQuery] int limit = 20,
+        [FromQuery] int offset = 0)
     {
         if (string.IsNullOrWhiteSpace(workId))
         {
@@ -33,16 +36,36 @@ public class EditionsController : ControllerBase
             return BadRequest("Work id must be 50 characters or fewer.");
         }
 
-        var editions = await _openLibraryService.SearchEditionsAsync(
-            id,
-            cancellationToken);
-
-        if (editions is null)
+        if (limit < 1 || limit > MaxLimit)
         {
-            return NotFound();
+            return BadRequest($"Limit must be between 1 and {MaxLimit}.");
         }
 
-        return Ok(editions);
+        if (offset < 0)
+        {
+            return BadRequest("Offset cannot be negative.");
+        }
+
+        try
+        {
+            var editions = await _openLibraryService.SearchEditionsAsync(
+                id,
+                cancellationToken,
+                limit,
+                offset);
+
+            if (editions is null)
+            {
+                return NotFound();
+            }
+
+            return Ok(editions);
+        }
+        catch (HttpRequestException)
+        {
+            return StatusCode(
+                StatusCodes.Status502BadGateway,
+                "Could not load editions from Open Library. Please try again later.");
+        }
     }
 }
-    

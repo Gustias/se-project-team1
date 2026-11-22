@@ -162,6 +162,48 @@ Example:
 
 The search currently requests up to 30 results.
 
+### Work Details
+
+```http
+GET /api/works/OL45883W
+```
+
+Returns title, description, cover and first publish date for one work. `404` if the work does not exist, `502` if Open Library cannot be reached.
+
+### Book Editions
+
+```http
+GET /api/editions/search?workId=OL45883W&limit=20&offset=0
+```
+
+Returns one page of editions for a work. `workId` is the work's Open Library id (without `/works/`). `limit` is 1-50 (default 20) and `offset` is 0 or greater (default 0).
+
+Example:
+
+```json
+{
+    "total": 57,
+    "items": [
+        {
+            "externalId": "OL1M",
+            "workExternalId": "OL45883W",
+            "title": "Dune",
+            "subtitle": null,
+            "publishers": ["Ace"],
+            "publishDate": "1990",
+            "pageCount": 412,
+            "format": "Paperback",
+            "language": "eng",
+            "isbn10": "0441172717",
+            "isbn13": "9780441172719",
+            "coverUrl": "https://covers.openlibrary.org/b/id/...-M.jpg"
+        }
+    ]
+}
+```
+
+`total` is the number of editions Open Library has for the work, so clients can page with `offset`. Responses: `400` for invalid parameters, `404` if the work does not exist, `502` if Open Library cannot be reached.
+
 ### Reading Progress
 
 ```text

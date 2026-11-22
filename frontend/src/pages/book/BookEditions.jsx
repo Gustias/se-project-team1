@@ -7,12 +7,14 @@ const PAGE_SIZE = 20;
 function EditionRow({ edition }) {
   const [imgFailed, setImgFailed] = useState(false);
 
+  const publishers = edition.publishers ?? [];
+
   const meta = [
-    edition.publishers.join(", "),
+    publishers.join(", "),
     edition.publishDate,
-    edition.pages ? `${edition.pages} pages` : null,
+    edition.pageCount ? `${edition.pageCount} pages` : null,
     edition.format,
-    edition.languages.length ? edition.languages.join(", ").toUpperCase() : null,
+    edition.language ? edition.language.toUpperCase() : null,
   ].filter(Boolean);
 
   return (
@@ -36,7 +38,11 @@ function EditionRow({ edition }) {
         {meta.length > 0 && <p className="meta">{meta.join(" · ")}</p>}
         {edition.isbn13 && <p className="meta">ISBN-13: {edition.isbn13}</p>}
         {edition.isbn10 && <p className="meta">ISBN-10: {edition.isbn10}</p>}
-        <a href={edition.url} target="_blank" rel="noreferrer">
+        <a
+          href={`https://openlibrary.org/books/${edition.externalId}`}
+          target="_blank"
+          rel="noreferrer"
+        >
           View on Open Library
         </a>
       </div>
@@ -49,6 +55,7 @@ function BookEditions() {
 
   const [editions, setEditions] = useState([]);
   const [total, setTotal] = useState(0);
+  const [nextOffset, setNextOffset] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -58,6 +65,7 @@ function BookEditions() {
 
     setEditions([]);
     setTotal(0);
+    setNextOffset(0);
     setError("");
     setLoading(true);
 
@@ -66,6 +74,7 @@ function BookEditions() {
       .then((result) => {
         setEditions(result.editions);
         setTotal(result.total);
+        setNextOffset(PAGE_SIZE);
       })
       .catch((err) => {
         if (err.name !== "AbortError") setError(err.message);
@@ -84,10 +93,11 @@ function BookEditions() {
     try {
       const result = await client.getWorkEditions(externalId, {
         limit: PAGE_SIZE,
-        offset: editions.length,
+        offset: nextOffset,
       });
       setEditions((prev) => [...prev, ...result.editions]);
       setTotal(result.total);
+      setNextOffset((prev) => prev + PAGE_SIZE);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -107,13 +117,13 @@ function BookEditions() {
 
       <ul className="editions">
         {editions.map((edition) => (
-          <EditionRow key={edition.key} edition={edition} />
+          <EditionRow key={edition.externalId} edition={edition} />
         ))}
       </ul>
 
       {loading && <p>Loading editions...</p>}
 
-      {!loading && editions.length > 0 && editions.length < total && (
+      {!loading && editions.length > 0 && nextOffset < total && (
         <button type="button" className="load-more" onClick={handleLoadMore}>
           Load more editions
         </button>

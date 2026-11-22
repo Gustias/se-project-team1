@@ -39,15 +39,12 @@ function BookPage() {
     client
       .getWork(externalId, controller.signal)
       .then((work) => {
-        const coverId = work.covers?.find((id) => id > 0);
         setBook({
           externalId,
           title: work.title,
           author: null,
-          description: descriptionText(work.description),
-          coverUrl: coverId
-            ? `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`
-            : null,
+          description: work.description,
+          coverUrl: work.coverUrl,
         });
       })
       .catch((err) => {

@@ -96,16 +96,14 @@ public class OpenLibraryService
             .ToList();
     }
 
-    public async Task<List<EditionSearchResultDto>?> SearchEditionsAsync(
-    string workId,
-    CancellationToken cancellationToken = default,
-    int limit = 20)
+    public async Task<WorkDetailsDto?> GetWorkAsync(
+        string workId,
+        CancellationToken cancellationToken = default)
     {
-        var url = $"works/{Uri.EscapeDataString(workId)}/editions.json" +
-        $"?limit={limit}";
+        var url = $"works/{Uri.EscapeDataString(workId)}.json";
 
         using var response =
-        await _httpClient.GetAsync(url, cancellationToken);
+            await _httpClient.GetAsync(url, cancellationToken);
 
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
@@ -115,46 +113,108 @@ public class OpenLibraryService
         response.EnsureSuccessStatusCode();
 
         await using var stream =
-        await response.Content.ReadAsStreamAsync(cancellationToken);
+            await response.Content.ReadAsStreamAsync(cancellationToken);
 
-        var openLibraryResponse =
-        await JsonSerializer.DeserializeAsync<OpenLibraryEditionsResponse>(
-            stream,
-            cancellationToken: cancellationToken);
+        var work =
+            await JsonSerializer.DeserializeAsync<OpenLibraryWork>(
+                stream,
+                cancellationToken: cancellationToken);
 
-        if (openLibraryResponse?.Entries == null)
+        if (work is null || string.IsNullOrWhiteSpace(work.Title))
         {
-            return new List<EditionSearchResultDto>();
+            return null;
         }
 
-    return openLibraryResponse.Entries
-        .Where(e => !string.IsNullOrWhiteSpace(e.Title))
-        .Select(e =>
+        return new WorkDetailsDto
         {
-            var isbn10 = e.Isbn10?.FirstOrDefault();
-            var isbn13 = e.Isbn13?.FirstOrDefault();
+            ExternalId = workId,
+            Title = work.Title,
+            Description = ReadDescription(work.Description),
+            CoverUrl = work.Covers?.FirstOrDefault(c => c > 0) is int coverId
+                ? $"https://covers.openlibrary.org/b/id/{coverId}-L.jpg"
+                : null,
+            FirstPublishDate = work.FirstPublishDate
+        };
+    }
 
-            return new EditionSearchResultDto
+    public async Task<PagedResult<EditionSearchResultDto>?> SearchEditionsAsync(
+        string workId,
+        CancellationToken cancellationToken = default,
+        int limit = 20,
+        int offset = 0)
+    {
+        var url = $"works/{Uri.EscapeDataString(workId)}/editions.json" +
+            $"?limit={limit}&offset={offset}";
+
+        using var response =
+            await _httpClient.GetAsync(url, cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            return null;
+        }
+
+        response.EnsureSuccessStatusCode();
+
+        await using var stream =
+            await response.Content.ReadAsStreamAsync(cancellationToken);
+
+        var openLibraryResponse =
+            await JsonSerializer.DeserializeAsync<OpenLibraryEditionsResponse>(
+                stream,
+                cancellationToken: cancellationToken);
+
+        var entries = openLibraryResponse?.Entries ?? new List<OpenLibraryEdition>();
+
+        var items = entries
+            .Where(e => !string.IsNullOrWhiteSpace(e.Title))
+            .Select(e => new EditionSearchResultDto
             {
                 ExternalId = e.Key?.Split('/').Last() ?? "",
                 WorkExternalId = workId,
                 Title = e.Title ?? "",
+                Subtitle = e.Subtitle,
                 CoverUrl = e.Covers?.FirstOrDefault(c => c > 0) is int coverId
                     ? $"https://covers.openlibrary.org/b/id/{coverId}-M.jpg"
                     : null,
                 PublishDate = e.PublishDate,
-                Isbn10 = isbn10,
-                Isbn13 = isbn13,
+                Isbn10 = e.Isbn10?.FirstOrDefault(),
+                Isbn13 = e.Isbn13?.FirstOrDefault(),
                 Publishers = (e.Publishers ?? new List<string>())
                     .Distinct(StringComparer.OrdinalIgnoreCase)
                     .Take(10)
                     .ToList(),
                 PageCount = e.NumberOfPages,
+                Format = e.PhysicalFormat,
                 Language = e.Languages?.FirstOrDefault()?.Key?.Split('/').Last()
-            };
-        })
-        .ToList();
-  }
+            })
+            .ToList();
+
+        return new PagedResult<EditionSearchResultDto>
+        {
+            Total = openLibraryResponse?.Size ?? offset + entries.Count,
+            Items = items
+        };
+    }
+
+    // Open Library returns the description either as a plain string
+    // or as an object like { "type": "/type/text", "value": "..." }.
+    private static string? ReadDescription(JsonElement? description)
+    {
+        if (description is not { } value)
+        {
+            return null;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.String => value.GetString(),
+            JsonValueKind.Object
+                when value.TryGetProperty("value", out var text)
+                    && text.ValueKind == JsonValueKind.String => text.GetString(),
+            _ => null
+        };
+    }
 
     private static string EscapeSearchQuery(string query)
     {
@@ -195,10 +255,28 @@ public class OpenLibraryService
         public List<OpenLibraryBook> Docs { get; set; } = new();
     }
 
+    private class OpenLibraryWork
+    {
+        [JsonPropertyName("title")]
+        public string? Title { get; set; }
+
+        [JsonPropertyName("description")]
+        public JsonElement? Description { get; set; }
+
+        [JsonPropertyName("covers")]
+        public List<int>? Covers { get; set; }
+
+        [JsonPropertyName("first_publish_date")]
+        public string? FirstPublishDate { get; set; }
+    }
+
     private class OpenLibraryEditionsResponse
     {
-    [JsonPropertyName("entries")]
-    public List<OpenLibraryEdition>? Entries { get; set; }
+        [JsonPropertyName("size")]
+        public int? Size { get; set; }
+
+        [JsonPropertyName("entries")]
+        public List<OpenLibraryEdition>? Entries { get; set; }
     }
 
     private class OpenLibraryEdition
@@ -226,6 +304,12 @@ public class OpenLibraryService
 
         [JsonPropertyName("number_of_pages")]
         public int? NumberOfPages { get; set; }
+
+        [JsonPropertyName("subtitle")]
+        public string? Subtitle { get; set; }
+
+        [JsonPropertyName("physical_format")]
+        public string? PhysicalFormat { get; set; }
 
         [JsonPropertyName("languages")]
         public List<OpenLibraryKeyRef>? Languages { get; set; }
