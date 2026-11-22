@@ -262,3 +262,177 @@ body {
     border-radius: 8px;
     font-weight: 600;
 }
+
+/* Book details page */
+.book-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.book-link:hover {
+  text-decoration: underline;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 20px;
+  color: #29483f;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+.book-header {
+  display: flex;
+  gap: 24px;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.book-header img,
+.book-header .no-cover {
+  flex: 0 0 180px;
+  width: 180px;
+  height: 270px;
+  object-fit: contain;
+}
+
+.book-header h2 {
+  margin-top: 0;
+}
+
+.editions-title {
+  margin: 32px 0 12px;
+}
+
+.editions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.edition {
+  display: flex;
+  gap: 16px;
+  background: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+}
+
+.edition img,
+.edition .no-cover {
+  flex: 0 0 70px;
+  width: 70px;
+  height: 100px;
+  object-fit: contain;
+  font-size: 12px;
+}
+
+.edition-info h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.edition-info p {
+  margin: 2px 0;
+}
+
+.edition-info a {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #29483f;
+}
+
+.load-more {
+  margin-top: 16px;
+  height: 42px;
+  padding: 0 20px;
+  border: 1px solid #839690;
+  border-radius: 8px;
+  background: #839690;
+  color: white;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.load-more:hover:not(:disabled) {
+  background: #29483f;
+  border-color: #29483f;
+}
+
+@media (max-width: 600px) {
+  .book-header {
+    flex-direction: column;
+  }
+}
+
+.view-editions-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 160px;
+  height: 42px;
+  box-sizing: border-box;
+  margin-top: 8px;
+  border: 1px solid #365e52;
+  border-radius: 8px;
+  background: white;
+  color: #29483f;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.view-editions-btn:hover {
+  background: #29483f;
+  color: white;
+}
+
+.book-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 24px 0 16px;
+  border-bottom: 2px solid #ddd;
+}
+
+.book-tabs a {
+  padding: 10px 16px;
+  margin-bottom: -2px;
+  border-bottom: 2px solid transparent;
+  color: #666;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.book-tabs a:hover {
+  color: #29483f;
+}
+
+.book-tabs a.active {
+  color: #29483f;
+  border-bottom-color: #29483f;
+}
+
+.book-section {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.book-section .editions-title {
+  margin: 0 0 12px;
+}
+
+.book-section .edition {
+  background: #f5f5f5;
+}

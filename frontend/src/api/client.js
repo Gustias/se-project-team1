@@ -77,21 +77,24 @@ export async function getCurrentUser() {
 export async function handle(response) {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
+    const text = await response.text();
 
     try {
-      const body = await response.json();
+      const body = JSON.parse(text);
 
-      if(Array.isArray(body.errors) && body.errors.length > 0) {
+      if (Array.isArray(body.errors) && body.errors.length > 0) {
         message = body.errors.join(" ");
       } else {
-        message = body.message || body.title || message;
+        message = body.detail || body.message || body.title || message;
       }
     } catch {
-      // response had no JSON body
+      // not JSON - the API sometimes returns a plain-text message
+      if (text && text.length <= 200) message = text;
     }
+
     throw new Error(message);
   }
-  
+
   if (response.status === 204) return null;
   return response.json();
 }
@@ -99,10 +102,6 @@ export async function handle(response) {
 export async function searchBooks(query, signal) {
   const url = `${BASE_URL}/api/books/search?q=${encodeURIComponent(query)}`;
   const response = await fetch(url, { signal });
-
-  console.log("API URL:", url);
-  console.log("Status:", response.status);
-  console.log("Content-Type:", response.headers.get("content-type"));
 
   return handle(response);
 }
@@ -197,4 +196,37 @@ export async function createBookRating({ userId, bookId, rating }) {
 export async function getReadingSummary(userId, from, to){
   const response = await fetch(`${BASE_URL}/api/reading-log/summary/${userId}?from=${from}&to=${to}`);
   return handle(response);
+}
+
+// ---- Work details + editions (both served by our API) ----
+// externalId may be "OL45883W" or "/works/OL45883W" - always return "OL45883W"
+export function toWorkId(externalId) {
+  return String(externalId).replace(/^\/?works\//, "");
+}
+
+export async function getWork(externalId, signal) {
+  const response = await fetch(
+    `${BASE_URL}/api/works/${encodeURIComponent(toWorkId(externalId))}`,
+    { signal },
+  );
+  return handle(response);
+}
+
+export async function getWorkEditions(
+  externalId,
+  { limit = 20, offset = 0 } = {},
+  signal,
+) {
+  const params = new URLSearchParams({
+    workId: toWorkId(externalId),
+    limit,
+    offset,
+  });
+
+  const response = await fetch(`${BASE_URL}/api/editions/search?${params}`, {
+    signal,
+  });
+  const data = await handle(response);
+
+  return { total: data.total, editions: data.items };
 }
