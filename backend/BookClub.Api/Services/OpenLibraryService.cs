@@ -27,7 +27,7 @@ public class OpenLibraryService
 
         return await _cache.GetOrCreateAsync(
             normalizedQuery,
-            () => FetchBooksFromOpenLibraryAsync(normalizedQuery),
+            () => FetchBooksFromOpenLibraryAsync(normalizedQuery, limit),
             cancellationToken);
     }
 
