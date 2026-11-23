@@ -113,11 +113,24 @@ export async function createBook({
   title,
   author,
 }) {
+  const csrfToken = await getCsrfToken();
+  
   const response = await fetch(`${BASE_URL}/api/books`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ externalId, isbn10, isbn13, title, author }),
+    credentials: "include",
+    headers: { 
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken, 
+    },
+    body: JSON.stringify({ 
+      externalId, 
+      isbn10, 
+      isbn13, 
+      title, 
+      author, 
+    }),
   });
+
   return handle(response);
 }
 
@@ -134,17 +147,21 @@ export async function deleteBook(id) {
 }
 
 export async function createReadingProgress({
-  userId,
   bookId,
   progress,
   lastChapterRead,
   status,
 }) {
+  const csrfToken = await getCsrfToken();
+  
   const response = await fetch(`${BASE_URL}/api/reading-progress`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    headers: { 
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken
+     },
     body: JSON.stringify({
-      userId,
       bookId,
       progress,
       lastChapterRead: lastChapterRead ?? null,
@@ -155,17 +172,25 @@ export async function createReadingProgress({
 }
 
 export async function getReadingProgress(id) {
-  const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`);
+  const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
+      credentials: "include"
+    });
+
   return handle(response);
 }
 
 export async function updateReadingProgress(
   id,
-  { progress, lastChapterRead, status },
-) {
+  { progress, lastChapterRead, status }) {
+  const csrfToken = await getCsrfToken();
+
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    headers: { 
+      "Content-Type": "application/json", 
+      "X-CSRF-TOKEN": csrfToken,
+    },
     body: JSON.stringify({
       progress,
       lastChapterRead: lastChapterRead ?? null,
@@ -177,9 +202,16 @@ export async function updateReadingProgress(
 }
 
 export async function deleteReadingProgress(id) {
+  const csrfToken = await getCsrfToken();
+
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "DELETE",
+    credentials: "include",
+    headers: {
+      "X-CSRF-TOKEN": csrfToken,
+    }
   });
+
   return handle(response);
 }
 

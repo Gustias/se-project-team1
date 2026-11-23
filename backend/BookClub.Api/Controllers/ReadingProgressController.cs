@@ -1,27 +1,41 @@
 using BookClub.Api.DTOs;
 using BookClub.Api.Services;
+using BookClub.Api.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 
 namespace BookClub.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/reading-progress")]
 public class ReadingProgressController : ControllerBase
 {
     private readonly ReadingProgressService _readingProgressService;
+    private readonly UserManager<User> _userManager;
 
     public ReadingProgressController(
-        ReadingProgressService readingProgressService)
+        ReadingProgressService readingProgressService,
+        UserManager<User> userManager)
     {
         _readingProgressService = readingProgressService;
+        _userManager = userManager;
     }
 
     [HttpPost]
     public async Task<IActionResult> CreateEntry(
         CreateReadingProgressDto request)
     {
+        var userId = _userManager.GetUserId(User);
+
+        if (!int.TryParse(userId, out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
         var entry = await _readingProgressService.CreateAsync(
-            request.UserId,
+            currentUserId,
             request.BookId,
             request.Progress,
             request.LastChapterRead,
@@ -46,8 +60,16 @@ public class ReadingProgressController : ControllerBase
         int id,
         UpdateReadingProgressDto request)
     {
+        var userId = _userManager.GetUserId(User);
+
+        if (!int.TryParse(userId, out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
         var updated = await _readingProgressService.UpdateAsync(
             id,
+            currentUserId,
             request.Progress,
             request.LastChapterRead,
             request.Status);
@@ -63,7 +85,16 @@ public class ReadingProgressController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteEntry(int id)
     {
-        var deleted = await _readingProgressService.DeleteAsync(id);
+        var userId = _userManager.GetUserId(User);
+
+        if (!int.TryParse(userId, out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
+        var deleted = await _readingProgressService.DeleteAsync(
+            id,
+            currentUserId);
 
         if (!deleted)
         {
@@ -76,7 +107,16 @@ public class ReadingProgressController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEntry(int id)
     {
-        var entry = await _readingProgressService.GetAsync(id);
+        var userId = _userManager.GetUserId(User);
+
+        if (!int.TryParse(userId, out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
+        var entry = await _readingProgressService.GetAsync(
+            id,
+            currentUserId);
 
         if (entry is null)
         {
