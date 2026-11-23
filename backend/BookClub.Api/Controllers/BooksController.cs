@@ -1,6 +1,7 @@
 using BookClub.Api.DTOs;
 using BookClub.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookClub.Api.Controllers;
 
@@ -8,7 +9,7 @@ namespace BookClub.Api.Controllers;
 [Route("api/books")]
 public class BooksController : ControllerBase
 {
-    private readonly OpenLibraryService _openLibraryService;    
+    private readonly OpenLibraryService _openLibraryService;
     private readonly BookService _bookService;
     public BooksController(
         BookService bookService,
@@ -41,6 +42,7 @@ public class BooksController : ControllerBase
 
         return Ok(books);
     }
+    [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateAsync(
         CreateBookDto request)
@@ -60,6 +62,7 @@ public class BooksController : ControllerBase
         return Ok(result.Book);
     }
 
+    [Authorize(Roles = "Admin")]
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteAsync(int id)
     {
