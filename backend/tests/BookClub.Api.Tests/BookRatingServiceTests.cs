@@ -16,7 +16,8 @@ public class BookRatingServiceTests
 
     private static void CreateMockBookEntry(AppDbContext context)
     {
-        context.Books.Add(new Book {
+        context.Books.Add(new Book
+        {
             Id = 1,
             ExternalId = "externalId",
             Author = null,
@@ -26,7 +27,8 @@ public class BookRatingServiceTests
 
     private static void CreateMockUserEntry(AppDbContext context)
     {
-        context.Users.Add(new User {
+        context.Users.Add(new User
+        {
             Id = 1,
             UserName = "TestUser",
         });
@@ -34,7 +36,8 @@ public class BookRatingServiceTests
 
     private static void CreateMockReadingProgressEntry(AppDbContext context, ReadingStatus readingStatus)
     {
-        context.ReadingProgresses.Add(new ReadingProgress {
+        context.ReadingProgresses.Add(new ReadingProgress
+        {
             Id = 1,
             BookId = 1,
             UserId = 1,
@@ -72,7 +75,7 @@ public class BookRatingServiceTests
         using var context = CreateContext();
         CreateMockUserEntry(context);
         CreateMockBookEntry(context);
-        CreateMockReadingProgressEntry(context,  ReadingStatus.Reading);
+        CreateMockReadingProgressEntry(context, ReadingStatus.Reading);
         await context.SaveChangesAsync();
 
         var service = new BookRatingService(context);
@@ -130,7 +133,7 @@ public class BookRatingServiceTests
 
         var service = new BookRatingService(context);
 
-        var result = await service.GetAsync(1);
+        var result = await service.GetAsync(1, 1);
         Assert.Null(result);
     }
 
@@ -149,7 +152,7 @@ public class BookRatingServiceTests
 
         var service = new BookRatingService(context);
 
-        var result = await service.GetAsync(1);
+        var result = await service.GetAsync(1, 1);
         Assert.NotNull(result);
         Assert.Equal(5, result.Rating);
         Assert.Equal(1, result.BookId);

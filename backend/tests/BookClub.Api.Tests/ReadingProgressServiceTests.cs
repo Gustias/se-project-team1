@@ -15,7 +15,8 @@ public class ReadingProgressServiceTests
 
     private static void CreateMockBookEntry(AppDbContext context)
     {
-        context.Books.Add(new Book {
+        context.Books.Add(new Book
+        {
             Id = 1,
             ExternalId = "externalId",
             Author = null,
@@ -25,7 +26,8 @@ public class ReadingProgressServiceTests
 
     private static void AddReadingProgress(AppDbContext context, int id, int userId, ReadingStatus status)
     {
-        context.ReadingProgresses.Add(new ReadingProgress {
+        context.ReadingProgresses.Add(new ReadingProgress
+        {
             Id = id,
             UserId = userId,
             BookId = 1,
@@ -103,7 +105,7 @@ public class ReadingProgressServiceTests
         using var context = CreateContext();
 
         var service = new ReadingProgressService(context);
-        var result = await service.UpdateAsync(1, 50, "Chapter 5", ReadingStatus.Read);
+        var result = await service.UpdateAsync(1, 1, 50, "Chapter 5", ReadingStatus.Read);
 
         Assert.Null(result);
     }
@@ -116,7 +118,7 @@ public class ReadingProgressServiceTests
         context.SaveChanges();
 
         var service = new ReadingProgressService(context);
-        var result = await service.UpdateAsync(1, 100, "Final chapter", ReadingStatus.Read);
+        var result = await service.UpdateAsync(1, 1, 100, "Final chapter", ReadingStatus.Read);
 
         Assert.NotNull(result);
         Assert.Equal(1, result.Id);
@@ -137,7 +139,7 @@ public class ReadingProgressServiceTests
         using var context = CreateContext();
 
         var service = new ReadingProgressService(context);
-        var result = await service.DeleteAsync(1);
+        var result = await service.DeleteAsync(1, 1);
 
         Assert.False(result);
     }
@@ -150,7 +152,7 @@ public class ReadingProgressServiceTests
         context.SaveChanges();
 
         var service = new ReadingProgressService(context);
-        var result = await service.DeleteAsync(1);
+        var result = await service.DeleteAsync(1, 1);
 
         Assert.True(result);
         Assert.Empty(context.ReadingProgresses);
@@ -162,7 +164,7 @@ public class ReadingProgressServiceTests
         using var context = CreateContext();
 
         var service = new ReadingProgressService(context);
-        var result = await service.GetAsync(1);
+        var result = await service.GetAsync(1, 1);
 
         Assert.Null(result);
     }
@@ -175,7 +177,7 @@ public class ReadingProgressServiceTests
         context.SaveChanges();
 
         var service = new ReadingProgressService(context);
-        var result = await service.GetAsync(1);
+        var result = await service.GetAsync(1, 1);
 
         Assert.NotNull(result);
         Assert.Equal(1, result.Id);
