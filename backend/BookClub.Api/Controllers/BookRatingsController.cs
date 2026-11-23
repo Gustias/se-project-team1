@@ -1,9 +1,9 @@
 using BookClub.Api.DTOs;
 using BookClub.Api.Services;
-using BookClub.Api.Models;
+using BookClub.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Identity;
+
 namespace BookClub.Api.Controllers;
 
 [Authorize]
@@ -12,14 +12,11 @@ namespace BookClub.Api.Controllers;
 public class BookRatingsController : ControllerBase
 {
     private readonly BookRatingService _bookRatingService;
-    private readonly UserManager<User> _userManager;
 
     public BookRatingsController(
-        BookRatingService bookRatingService,
-        UserManager<User> userManager)
+        BookRatingService bookRatingService)
     {
         _bookRatingService = bookRatingService;
-        _userManager = userManager;
     }
 
     [HttpPost]
@@ -33,9 +30,9 @@ public class BookRatingsController : ControllerBase
             });
         }
 
-        var userId = _userManager.GetUserId(User);
+        var currentUserId = User.GetUserId();
 
-        if (!int.TryParse(userId, out var currentUserId))
+        if (currentUserId is null)
         {
             return Unauthorized();
         }
@@ -43,7 +40,7 @@ public class BookRatingsController : ControllerBase
         try
         {
             var rating = await _bookRatingService.CreateAsync(
-                currentUserId,
+                currentUserId.Value,
                 request.BookId,
                 request.Rating);
 
@@ -69,14 +66,14 @@ public class BookRatingsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetAsync(int id)
     {
-        var userId = _userManager.GetUserId(User);
+        var currentUserId = User.GetUserId();
 
-        if (!int.TryParse(userId, out var currentUserId))
+        if (currentUserId is null)
         {
             return Unauthorized();
         }
 
-        var rating = await _bookRatingService.GetAsync(id, currentUserId);
+        var rating = await _bookRatingService.GetAsync(id, currentUserId.Value);
 
         if (rating is null)
         {

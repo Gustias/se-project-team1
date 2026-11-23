@@ -1,9 +1,8 @@
 using BookClub.Api.DTOs;
-using BookClub.Api.Models;
 using BookClub.Api.Services;
+using BookClub.Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 
 namespace BookClub.Api.Controllers;
 
@@ -13,14 +12,11 @@ namespace BookClub.Api.Controllers;
 public class ReadingLogController : ControllerBase
 {
     private readonly ReadingLogService _readingLogService;
-    private readonly UserManager<User> _userManager;
 
     public ReadingLogController(
-        ReadingLogService readingLogService,
-        UserManager<User> userManager)
+        ReadingLogService readingLogService)
     {
         _readingLogService = readingLogService;
-        _userManager = userManager;
     }
 
     [HttpPost]
@@ -32,15 +28,15 @@ public class ReadingLogController : ControllerBase
             return BadRequest("EndPage must be greater than or equal to StartPage");
         }
 
-        var userId = _userManager.GetUserId(User);
+        var currentUserId = User.GetUserId();
 
-        if (!int.TryParse(userId, out var currentUserId))
+        if (currentUserId is null)
         {
             return Unauthorized();
         }
 
         var entry = await _readingLogService.CreateAsync(
-            currentUserId,
+            currentUserId.Value,
             request.BookId,
             request.StartPage,
             request.EndPage,
@@ -58,14 +54,14 @@ public class ReadingLogController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEntryById(int id)
     {
-        var userId = _userManager.GetUserId(User);
+        var currentUserId = User.GetUserId();
 
-        if (!int.TryParse(userId, out var currentUserId))
+        if (currentUserId is null)
         {
             return Unauthorized();
         }
 
-        var log = await _readingLogService.GetAsync(id, currentUserId);
+        var log = await _readingLogService.GetAsync(id, currentUserId.Value);
 
         if (log is null)
         {
@@ -84,28 +80,28 @@ public class ReadingLogController : ControllerBase
             return BadRequest("'to' date must be on or after 'from' date.");
         }
 
-        var userId = _userManager.GetUserId(User);
+        var currentUserId = User.GetUserId();
 
-        if (!int.TryParse(userId, out var currentUserId))
+        if (currentUserId is null)
         {
             return Unauthorized();
         }
 
-        return Ok(await _readingLogService.GetSummaryAsync(currentUserId, from, to));
+        return Ok(await _readingLogService.GetSummaryAsync(currentUserId.Value, from, to));
     }
 
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteEntry(int id)
     {
-        var userId = _userManager.GetUserId(User);
+        var currentUserId = User.GetUserId();
 
-        if (!int.TryParse(userId, out var currentUserId))
+        if (currentUserId is null)
         {
             return Unauthorized();
         }
 
-        var deleted = await _readingLogService.DeleteAsync(id, currentUserId);
+        var deleted = await _readingLogService.DeleteAsync(id, currentUserId.Value);
 
         if (!deleted)
         {
