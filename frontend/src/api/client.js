@@ -215,11 +215,17 @@ export async function deleteReadingProgress(id) {
   return handle(response);
 }
 
-export async function createBookRating({ userId, bookId, rating }) {
+export async function createBookRating({ bookId, rating }) {
+  const csrfToken = await getCsrfToken();
+
   const response = await fetch(`${BASE_URL}/api/book-ratings`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, bookId, rating }),
+    credentials: "include",
+    headers: { 
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+    },
+    body: JSON.stringify({ bookId, rating }),
   });
 
   return handle(response);

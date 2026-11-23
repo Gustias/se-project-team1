@@ -103,7 +103,6 @@ function BookCard({ book }) {
 
     try {
       await client.createBookRating({
-        userId: 1,
         bookId: savedBookId,
         rating,
       });

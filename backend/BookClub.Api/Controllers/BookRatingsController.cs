@@ -1,17 +1,25 @@
 using BookClub.Api.DTOs;
 using BookClub.Api.Services;
+using BookClub.Api.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Identity;
 namespace BookClub.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/book-ratings")]
 public class BookRatingsController : ControllerBase
 {
     private readonly BookRatingService _bookRatingService;
+    private readonly UserManager<User> _userManager;
 
-    public BookRatingsController(BookRatingService bookRatingService)
+    public BookRatingsController(
+        BookRatingService bookRatingService,
+        UserManager<User> userManager)
     {
         _bookRatingService = bookRatingService;
+        _userManager = userManager;
     }
 
     [HttpPost]
@@ -25,10 +33,17 @@ public class BookRatingsController : ControllerBase
             });
         }
 
+        var userId = _userManager.GetUserId(User);
+
+        if (!int.TryParse(userId, out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
         try
         {
             var rating = await _bookRatingService.CreateAsync(
-                request.UserId,
+                currentUserId,
                 request.BookId,
                 request.Rating);
 
@@ -54,7 +69,14 @@ public class BookRatingsController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetAsync(int id)
     {
-        var rating = await _bookRatingService.GetAsync(id);
+        var userId = _userManager.GetUserId(User);
+
+        if (!int.TryParse(userId, out var currentUserId))
+        {
+            return Unauthorized();
+        }
+
+        var rating = await _bookRatingService.GetAsync(id, currentUserId);
 
         if (rating is null)
         {
