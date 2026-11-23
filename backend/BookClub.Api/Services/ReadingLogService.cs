@@ -43,9 +43,11 @@ public class ReadingLogService
         return ToDto(entry);
     }
 
-    public async Task<ReadingLogDto?> GetAsync(int id)
+    public async Task<ReadingLogDto?> GetAsync(int id, int userId)
     {
-        var existing = await _dbContext.ReadingLogs.FindAsync(id);
+        var existing = await _dbContext.ReadingLogs
+            .FirstOrDefaultAsync(rl =>
+                rl.Id == id && rl.UserId == userId);
 
         if (existing is null)
         {
@@ -76,9 +78,11 @@ public class ReadingLogService
         };
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, int userId)
     {
-        var existing = await _dbContext.ReadingLogs.FindAsync(id);
+        var existing = await _dbContext.ReadingLogs.
+            FirstOrDefaultAsync(rl =>
+                rl.Id == id && rl.UserId == userId);
 
         if (existing is null)
         {

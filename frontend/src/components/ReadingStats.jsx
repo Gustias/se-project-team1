@@ -85,8 +85,8 @@ export default function ReadingStats() {
   const [days, setDays] = useState([]);
 
   useEffect(() => {
-    const {from, to} = getRange(range);
-    getReadingSummary(1, from, to)
+    const { from, to } = getRange(range);
+    getReadingSummary(from, to)
       .then((data) => {
         if (range === "month") {
           setDays(fillDays(data.days, from, to));
