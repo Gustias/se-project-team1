@@ -15,7 +15,8 @@ public class BookServiceTests //only tests the database related stuff, doesn't t
 
     private static void CreateMockBookEntry(AppDbContext context)
     {
-        context.Books.Add(new Book {
+        context.Books.Add(new Book
+        {
             Id = 1,
             ExternalId = "externalId",
             Title = "TestTitle",
@@ -50,32 +51,6 @@ public class BookServiceTests //only tests the database related stuff, doesn't t
         Assert.Equal("isbn13", result.Book.Isbn13);
         Assert.Equal("title", result.Book.Title);
         Assert.Equal("author", result.Book.Author);
-    }
-
-    [Fact]
-    public async Task DeleteAsync_WhenBookDoesNotExist_ReturnsFalse()
-    {
-        using var context = CreateContext();
-
-        var service = new BookService(context);
-        var result = await service.DeleteAsync(1);
-
-        Assert.False(result);
-    }
-
-
-    [Fact]
-    public async Task DeleteAsync_WhenConditionsAreMet_ReturnsTrue()
-    {
-        using var context = CreateContext();
-        CreateMockBookEntry(context);
-        context.SaveChanges();
-
-        var service = new BookService(context);
-        var result = await service.DeleteAsync(1);
-
-        Assert.True(result);
-        Assert.Empty(context.Books);
     }
 
     [Fact]

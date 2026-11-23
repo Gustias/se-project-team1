@@ -139,13 +139,6 @@ export async function getBook(id) {
   return handle(response);
 }
 
-export async function deleteBook(id) {
-  const response = await fetch(`${BASE_URL}/api/books/${id}`, {
-    method: "DELETE",
-  });
-  return handle(response);
-}
-
 export async function createReadingProgress({
   bookId,
   progress,
@@ -233,7 +226,7 @@ export async function createBookRating({ bookId, rating }) {
 
 export async function getReadingSummary(from, to){
   const response = await fetch(
-    `${BASE_URL}/api/reading-log/summary/${userId}?from=${from}&to=${to}`,
+    `${BASE_URL}/api/reading-log/summary?from=${from}&to=${to}`,
   {
     credentials: "include",
   });

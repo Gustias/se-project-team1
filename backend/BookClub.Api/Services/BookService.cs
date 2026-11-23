@@ -45,21 +45,6 @@ public class BookService
 
     }
 
-    public async Task<bool> DeleteAsync(int id)
-    {
-        var existing = await _dbContext.Books.FindAsync(id);
-
-        if (existing is null)
-        {
-            return false;
-        }
-
-        _dbContext.Books.Remove(existing);
-        await _dbContext.SaveChangesAsync();
-
-        return true;
-    }
-
     public async Task<GetBookDto?> GetAsync(int id)
     {
         var existing = await _dbContext.Books.FindAsync(id);
