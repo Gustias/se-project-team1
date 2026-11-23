@@ -62,20 +62,6 @@ public class BooksController : ControllerBase
         return Ok(result.Book);
     }
 
-    [Authorize(Roles = "Admin")]
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteAsync(int id)
-    {
-        var deleted = await _bookService.DeleteAsync(id);
-
-        if (!deleted)
-        {
-            return NotFound();
-        }
-
-        return NoContent();
-    }
-
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(int id)
     {
