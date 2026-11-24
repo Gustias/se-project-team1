@@ -293,7 +293,7 @@ As a user, I want to view statistics about my reading activity so that I can und
 - The user can see their highest-rated books.
 - The user can see their lowest-rated books.
 
-**Status:** Planned
+**Status:** Implemented
 
 ---
 
