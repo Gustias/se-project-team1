@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BookClub.Api.Tests.IntegrationTests;
 
@@ -17,6 +18,7 @@ public class AuthApiTests : IClassFixture<ApiFactory>
         });
 
     private record CsrfToken(string Token);
+    private record RegistrationError(string Message, List<string> Errors);
 
     private static string NewEmail() => $"{Guid.NewGuid():N}@example.com";
 
@@ -43,6 +45,22 @@ public class AuthApiTests : IClassFixture<ApiFactory>
             new { userName = email, email, password = Password });
         Assert.True(response.IsSuccessStatusCode);
         return email;
+    }
+
+    private static async Task AssertDuplicateRegistrationErrorAsync(
+        HttpResponseMessage response)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var error = await response.Content
+            .ReadFromJsonAsync<RegistrationError>();
+
+        Assert.NotNull(error);
+        Assert.Equal("Registration failed.", error.Message);
+        Assert.Single(error.Errors);
+        Assert.Contains(
+            "Registration could not be completed.",
+            error.Errors);
     }
 
     [Fact]
@@ -115,5 +133,89 @@ public class AuthApiTests : IClassFixture<ApiFactory>
     {
         using var response = await _client.GetAsync("/api/auth/me");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Register_WhenEmailIsInvalid_Returns400()
+    {
+        using var response = await PostAsync(
+            "/api/auth/register",
+            new
+            {
+                userName = $"TestUser{Guid.NewGuid():N}",
+                email = "invalid-email",
+                password = Password
+            });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var problem = await response.Content
+            .ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problem);
+        Assert.Contains("Email", problem.Errors.Keys);
+    }
+
+    [Theory]
+    [InlineData("Test123", "at least 8 characters")]
+    [InlineData("TestPassword", "digit")]
+    [InlineData("test1234", "uppercase")]
+    [InlineData("TEST1234", "lowercase")]
+    public async Task Register_WhenPasswordIsWeak_Returns400(
+        string password, string expectedError)
+    {
+        var email = NewEmail();
+
+        using var response = await PostAsync(
+            "/api/auth/register",
+            new
+            {
+                userName = email,
+                email = email,
+                password = password
+            });
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var error = await response.Content
+            .ReadFromJsonAsync<RegistrationError>();
+
+        Assert.NotNull(error);
+        Assert.Equal("Registration failed.", error.Message);
+        Assert.Contains(error.Errors, e => e.Contains(expectedError));
+    }
+
+    [Fact]
+    public async Task Register_WhenEmailAlreadyExists_Returns400()
+    {
+        var email = await RegisterAsync();
+
+        using var response = await PostAsync(
+            "/api/auth/register",
+            new
+            {
+                userName = $"TestUser{Guid.NewGuid():N}",
+                email = email,
+                password = Password
+            });
+
+        await AssertDuplicateRegistrationErrorAsync(response);
+    }
+
+    [Fact]
+    public async Task Register_WhenUserNameAlreadyExists_Returns400()
+    {
+        var userName = await RegisterAsync();
+
+        using var response = await PostAsync(
+            "/api/auth/register",
+            new
+            {
+                userName = userName,
+                email = NewEmail(),
+                password = Password
+            });
+
+        await AssertDuplicateRegistrationErrorAsync(response);
     }
 }
