@@ -25,6 +25,9 @@ jobs:
       - name: Build backend
         run: dotnet build backend/BookClub.Api/BookClub.Api.csproj --no-restore
 
+      - name: Run tests
+        run: dotnet test backend/tests/BookClub.Api.Tests/BookClub.Api.Tests.csproj
+
   frontend:
     name: Frontend build
     runs-on: ubuntu-latest
