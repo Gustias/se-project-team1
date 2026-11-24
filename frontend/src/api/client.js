@@ -77,21 +77,24 @@ export async function getCurrentUser() {
 export async function handle(response) {
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
+    const text = await response.text();
 
     try {
-      const body = await response.json();
+      const body = JSON.parse(text);
 
-      if(Array.isArray(body.errors) && body.errors.length > 0) {
+      if (Array.isArray(body.errors) && body.errors.length > 0) {
         message = body.errors.join(" ");
       } else {
-        message = body.message || body.title || message;
+        message = body.detail || body.message || body.title || message;
       }
     } catch {
-      // response had no JSON body
+      // not JSON - the API sometimes returns a plain-text message
+      if (text && text.length <= 200) message = text;
     }
+
     throw new Error(message);
   }
-  
+
   if (response.status === 204) return null;
   return response.json();
 }
@@ -99,10 +102,6 @@ export async function handle(response) {
 export async function searchBooks(query, signal) {
   const url = `${BASE_URL}/api/books/search?q=${encodeURIComponent(query)}`;
   const response = await fetch(url, { signal });
-
-  console.log("API URL:", url);
-  console.log("Status:", response.status);
-  console.log("Content-Type:", response.headers.get("content-type"));
 
   return handle(response);
 }
@@ -114,11 +113,24 @@ export async function createBook({
   title,
   author,
 }) {
+  const csrfToken = await getCsrfToken();
+  
   const response = await fetch(`${BASE_URL}/api/books`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ externalId, isbn10, isbn13, title, author }),
+    credentials: "include",
+    headers: { 
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken, 
+    },
+    body: JSON.stringify({ 
+      externalId, 
+      isbn10, 
+      isbn13, 
+      title, 
+      author, 
+    }),
   });
+
   return handle(response);
 }
 
@@ -127,25 +139,22 @@ export async function getBook(id) {
   return handle(response);
 }
 
-export async function deleteBook(id) {
-  const response = await fetch(`${BASE_URL}/api/books/${id}`, {
-    method: "DELETE",
-  });
-  return handle(response);
-}
-
 export async function createReadingProgress({
-  userId,
   bookId,
   progress,
   lastChapterRead,
   status,
 }) {
+  const csrfToken = await getCsrfToken();
+  
   const response = await fetch(`${BASE_URL}/api/reading-progress`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    headers: { 
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken
+     },
     body: JSON.stringify({
-      userId,
       bookId,
       progress,
       lastChapterRead: lastChapterRead ?? null,
@@ -156,17 +165,25 @@ export async function createReadingProgress({
 }
 
 export async function getReadingProgress(id) {
-  const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`);
+  const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
+      credentials: "include"
+    });
+
   return handle(response);
 }
 
 export async function updateReadingProgress(
   id,
-  { progress, lastChapterRead, status },
-) {
+  { progress, lastChapterRead, status }) {
+  const csrfToken = await getCsrfToken();
+
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    headers: { 
+      "Content-Type": "application/json", 
+      "X-CSRF-TOKEN": csrfToken,
+    },
     body: JSON.stringify({
       progress,
       lastChapterRead: lastChapterRead ?? null,
@@ -178,23 +195,74 @@ export async function updateReadingProgress(
 }
 
 export async function deleteReadingProgress(id) {
+  const csrfToken = await getCsrfToken();
+
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "DELETE",
+    credentials: "include",
+    headers: {
+      "X-CSRF-TOKEN": csrfToken,
+    }
   });
+
   return handle(response);
 }
 
-export async function createBookRating({ userId, bookId, rating }) {
+export async function createBookRating({ bookId, rating }) {
+  const csrfToken = await getCsrfToken();
+
   const response = await fetch(`${BASE_URL}/api/book-ratings`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ userId, bookId, rating }),
+    credentials: "include",
+    headers: { 
+      "Content-Type": "application/json",
+      "X-CSRF-TOKEN": csrfToken,
+    },
+    body: JSON.stringify({ bookId, rating }),
   });
 
   return handle(response);
 }
 
-export async function getReadingSummary(userId, from, to){
-  const response = await fetch(`${BASE_URL}/api/reading-log/summary/${userId}?from=${from}&to=${to}`);
+export async function getReadingSummary(from, to){
+  const response = await fetch(
+    `${BASE_URL}/api/reading-log/summary?from=${from}&to=${to}`,
+  {
+    credentials: "include",
+  });
+  
   return handle(response);
+}
+
+// ---- Work details + editions (both served by our API) ----
+// externalId may be "OL45883W" or "/works/OL45883W" - always return "OL45883W"
+export function toWorkId(externalId) {
+  return String(externalId).replace(/^\/?works\//, "");
+}
+
+export async function getWork(externalId, signal) {
+  const response = await fetch(
+    `${BASE_URL}/api/works/${encodeURIComponent(toWorkId(externalId))}`,
+    { signal },
+  );
+  return handle(response);
+}
+
+export async function getWorkEditions(
+  externalId,
+  { limit = 20, offset = 0 } = {},
+  signal,
+) {
+  const params = new URLSearchParams({
+    workId: toWorkId(externalId),
+    limit,
+    offset,
+  });
+
+  const response = await fetch(`${BASE_URL}/api/editions/search?${params}`, {
+    signal,
+  });
+  const data = await handle(response);
+
+  return { total: data.total, editions: data.items };
 }

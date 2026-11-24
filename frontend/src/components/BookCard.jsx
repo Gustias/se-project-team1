@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { client } from "../api/index.js";
 
 function BookCard({ book }) {
@@ -45,7 +46,6 @@ function BookCard({ book }) {
       setSavedBookId(savedBook.id);
 
       const readingProgress = await client.createReadingProgress({
-        userId: 1,
         bookId: savedBook.id,
         progress: 0,
         lastChapterRead: null,
@@ -103,7 +103,6 @@ function BookCard({ book }) {
 
     try {
       await client.createBookRating({
-        userId: 1,
         bookId: savedBookId,
         rating,
       });
@@ -119,18 +118,31 @@ function BookCard({ book }) {
   return (
     <article className="book-card">
       {book.coverUrl && !imgFailed ? (
-        <img
-          src={book.coverUrl}
-          alt={book.title}
-          loading="lazy"
-          onError={() => setImgFailed(true)}
-        />
+        <Link
+          to={`/books/${encodeURIComponent(client.toWorkId(book.externalId))}`}
+          state={{ book }}
+        >
+          <img
+            src={book.coverUrl}
+            alt={book.title}
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+        </Link>
       ) : (
         <div className="no-cover">No cover</div>
       )}
 
       <div className="info">
-        <h2>{book.title}</h2>
+        <h2>
+          <Link
+            className="book-link"
+            to={`/books/${encodeURIComponent(client.toWorkId(book.externalId))}`}
+            state={{ book }}
+          >
+            {book.title}
+          </Link>
+        </h2>
 
         <p>{book.author || "Unknown author"}</p>
 
@@ -177,6 +189,14 @@ function BookCard({ book }) {
             )}
           </>
         )}
+
+        <Link
+          className="view-editions-btn"
+          to={`/books/${encodeURIComponent(client.toWorkId(book.externalId))}`}
+          state={{ book }}
+        >
+          View details
+        </Link>
 
         <div className="reading-list">
           <label>

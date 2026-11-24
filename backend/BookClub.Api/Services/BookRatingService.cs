@@ -72,10 +72,11 @@ public class BookRatingService
         return ToDto(entry);
     }
 
-    public async Task<BookRatingDto?> GetAsync(int id)
+    public async Task<BookRatingDto?> GetAsync(int id, int userId)
     {
         var entry = await _dbContext.BookRatingEntries
-            .FirstOrDefaultAsync(r => r.Id == id);
+            .FirstOrDefaultAsync(r =>
+                r.Id == id && r.UserId == userId);
 
         if (entry is null)
         {

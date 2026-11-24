@@ -15,7 +15,8 @@ public class ReadingLogServiceTests
 
     private static void CreateMockBookEntry(AppDbContext context)
     {
-        context.Books.Add(new Book {
+        context.Books.Add(new Book
+        {
             Id = 1,
             ExternalId = "externalId",
             Author = null,
@@ -25,7 +26,8 @@ public class ReadingLogServiceTests
 
     private static void CreateMockUserEntry(AppDbContext context)
     {
-        context.Users.Add(new User {
+        context.Users.Add(new User
+        {
             Id = 1,
             UserName = "TestUser",
         });
@@ -51,7 +53,7 @@ public class ReadingLogServiceTests
         context.SaveChanges();
 
         var service = new ReadingLogService(context);
-        var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026,11,09));
+        var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026, 11, 09));
 
         Assert.Null(result);
     }
@@ -64,7 +66,7 @@ public class ReadingLogServiceTests
         context.SaveChanges();
 
         var service = new ReadingLogService(context);
-        var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026,11,09));
+        var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026, 11, 09));
 
         Assert.Null(result);
     }
@@ -78,7 +80,7 @@ public class ReadingLogServiceTests
         context.SaveChanges();
 
         var service = new ReadingLogService(context);
-        var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026,11,09));
+        var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026, 11, 09));
 
         Assert.Single(context.ReadingLogs);
         Assert.NotNull(result);
@@ -93,7 +95,7 @@ public class ReadingLogServiceTests
         using var context = CreateContext();
 
         var service = new ReadingLogService(context);
-        var result = await service.GetAsync(1);
+        var result = await service.GetAsync(1, 1);
 
         Assert.Null(result);
     }
@@ -109,12 +111,12 @@ public class ReadingLogServiceTests
             UserId = 1,
             StartPage = 10,
             EndPage = 11,
-            Date = new DateOnly(2026,11,09)
+            Date = new DateOnly(2026, 11, 09)
         });
         context.SaveChanges();
 
         var service = new ReadingLogService(context);
-        var result = await service.GetAsync(1);
+        var result = await service.GetAsync(1, 1);
 
         Assert.NotNull(result);
         Assert.Equal(10, result.StartPage);
@@ -178,7 +180,7 @@ public class ReadingLogServiceTests
         using var context = CreateContext();
 
         var service = new ReadingLogService(context);
-        var result = await service.DeleteAsync(1);
+        var result = await service.DeleteAsync(1, 1);
 
         Assert.False(result);
     }
@@ -199,7 +201,7 @@ public class ReadingLogServiceTests
         context.SaveChanges();
 
         var service = new ReadingLogService(context);
-        var result = await service.DeleteAsync(1);
+        var result = await service.DeleteAsync(1, 1);
 
         Assert.True(result);
         Assert.Empty(context.ReadingLogs);

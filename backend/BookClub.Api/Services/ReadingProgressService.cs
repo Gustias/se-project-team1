@@ -57,11 +57,16 @@ public class ReadingProgressService
 
     public async Task<GetReadingProgressDto?> UpdateAsync(
         int id,
+        int userId,
         int progress,
-        String? chapter,
+        String? lastChapterRead,
         ReadingStatus status)
     {
-        var existing = await _dbContext.ReadingProgresses.FindAsync(id);
+        var existing = await _dbContext.ReadingProgresses
+            .FirstOrDefaultAsync(rp =>
+                rp.Id == id &&
+                rp.UserId == userId
+            );
 
         if (existing is null)
         {
@@ -69,7 +74,7 @@ public class ReadingProgressService
         }
 
         existing.Progress = progress;
-        existing.LastChapterRead = chapter;
+        existing.LastChapterRead = lastChapterRead;
         existing.Status = status;
 
         await _dbContext.SaveChangesAsync();
@@ -77,9 +82,12 @@ public class ReadingProgressService
         return ToDto(existing);
     }
 
-    public async Task<bool> DeleteAsync(int id)
+    public async Task<bool> DeleteAsync(int id, int userId)
     {
-        var existing = await _dbContext.ReadingProgresses.FindAsync(id);
+        var existing = await _dbContext.ReadingProgresses
+            .FirstOrDefaultAsync(rp =>
+                rp.Id == id &&
+                rp.UserId == userId);
 
         if (existing is null)
         {
@@ -92,9 +100,12 @@ public class ReadingProgressService
         return true;
     }
 
-    public async Task<GetReadingProgressDto?> GetAsync(int id)
+    public async Task<GetReadingProgressDto?> GetAsync(int id, int userId)
     {
-        var existing = await _dbContext.ReadingProgresses.FindAsync(id);
+        var existing = await _dbContext.ReadingProgresses
+        .FirstOrDefaultAsync(rp =>
+            rp.Id == id &&
+            rp.UserId == userId);
 
         if (existing is null)
         {

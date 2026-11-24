@@ -1,18 +1,20 @@
 using BookClub.Api.DTOs;
-using BookClub.Api.Models;
 using BookClub.Api.Services;
-using Microsoft.AspNetCore.Http.HttpResults;
+using BookClub.Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookClub.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/reading-log")]
 public class ReadingLogController : ControllerBase
 {
     private readonly ReadingLogService _readingLogService;
 
-    public ReadingLogController(ReadingLogService readingLogService)
+    public ReadingLogController(
+        ReadingLogService readingLogService)
     {
         _readingLogService = readingLogService;
     }
@@ -26,8 +28,15 @@ public class ReadingLogController : ControllerBase
             return BadRequest("EndPage must be greater than or equal to StartPage");
         }
 
-        var entry =  await _readingLogService.CreateAsync(
-            request.UserId,
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var entry = await _readingLogService.CreateAsync(
+            currentUserId.Value,
             request.BookId,
             request.StartPage,
             request.EndPage,
@@ -45,7 +54,14 @@ public class ReadingLogController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEntryById(int id)
     {
-        var log = await _readingLogService.GetAsync(id);
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var log = await _readingLogService.GetAsync(id, currentUserId.Value);
 
         if (log is null)
         {
@@ -55,9 +71,8 @@ public class ReadingLogController : ControllerBase
         return Ok(log);
     }
 
-    [HttpGet("summary/{userId}")]
-    public async Task<IActionResult> GetSummary(int userId,
-        DateOnly from, DateOnly to)
+    [HttpGet("summary")]
+    public async Task<IActionResult> GetSummary(DateOnly from, DateOnly to)
     {
 
         if (to < from)
@@ -65,14 +80,28 @@ public class ReadingLogController : ControllerBase
             return BadRequest("'to' date must be on or after 'from' date.");
         }
 
-        return Ok(await _readingLogService.GetSummaryAsync(userId, from, to));
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await _readingLogService.GetSummaryAsync(currentUserId.Value, from, to));
     }
 
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteEntry(int id)
     {
-        var deleted = await _readingLogService.DeleteAsync(id);
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var deleted = await _readingLogService.DeleteAsync(id, currentUserId.Value);
 
         if (!deleted)
         {
@@ -81,6 +110,5 @@ public class ReadingLogController : ControllerBase
 
         return NoContent();
     }
-
 
 }
