@@ -3,16 +3,21 @@ using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using BookClub.Api.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using BookClub.Api.Data.Repositories;
 
 namespace BookClub.Api.Services;
 
 public class ReadingProgressService
 {
     private readonly AppDbContext _dbContext;
+    private readonly OwnedEntityRepository<ReadingProgress> _ownedEntityRepository;
 
-    public ReadingProgressService(AppDbContext dbContext)
+    public ReadingProgressService(
+        AppDbContext dbContext,
+        OwnedEntityRepository<ReadingProgress> ownedEntityRepository)
     {
         _dbContext = dbContext;
+        _ownedEntityRepository = ownedEntityRepository;
     }
 
     public async Task<GetReadingProgressDto> CreateAsync(
@@ -62,11 +67,9 @@ public class ReadingProgressService
         String? lastChapterRead,
         ReadingStatus status)
     {
-        var existing = await _dbContext.ReadingProgresses
-            .FirstOrDefaultAsync(rp =>
-                rp.Id == id &&
-                rp.UserId == userId
-            );
+        var existing = await _ownedEntityRepository.GetEntityAsync(
+            id,
+            userId);
 
         if (existing is null)
         {
@@ -84,35 +87,20 @@ public class ReadingProgressService
 
     public async Task<bool> DeleteAsync(int id, int userId)
     {
-        var existing = await _dbContext.ReadingProgresses
-            .FirstOrDefaultAsync(rp =>
-                rp.Id == id &&
-                rp.UserId == userId);
-
-        if (existing is null)
-        {
-            return false;
-        }
-
-        _dbContext.ReadingProgresses.Remove(existing);
-        await _dbContext.SaveChangesAsync();
-
-        return true;
+        return await _ownedEntityRepository.DeleteAsync(
+            id,
+            userId);
     }
 
-    public async Task<GetReadingProgressDto?> GetAsync(int id, int userId)
+    public async Task<GetReadingProgressDto?> GetAsync(
+        int id,
+        int userId)
     {
-        var existing = await _dbContext.ReadingProgresses
-        .FirstOrDefaultAsync(rp =>
-            rp.Id == id &&
-            rp.UserId == userId);
-
-        if (existing is null)
-        {
-            return null;
-        }
-
-        return ToDto(existing);
+        return await _ownedEntityRepository
+            .GetMappedAsync(
+                id,
+                userId,
+                ToDto);
     }
 
     private static GetReadingProgressDto ToDto(ReadingProgress entry)
