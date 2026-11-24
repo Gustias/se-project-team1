@@ -84,8 +84,10 @@ export default function ReadingStats() {
   const [range, setRange] = useState("month"); // month, year, all
   const [days, setDays] = useState([]);
   const [totalBooksRead, setTotalBooksRead] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    setLoading(true);
     const { from, to } = getRange(range);
     getReadingSummary(from, to)
       .then((data) => {
@@ -101,7 +103,8 @@ export default function ReadingStats() {
           setDays(fillMonths(data.days, data.days[0].date, to));
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => console.log(err))
+      .finally(() => setLoading(false));
   }, [range]);
 
     const entriesCount = days.filter(d => d.pagesRead > 0).length; // aggregated entries, not actual ones
@@ -109,23 +112,27 @@ export default function ReadingStats() {
     for (const day of days) {
       totalPagesRead = totalPagesRead + day.pagesRead;
     }
-    const averagePagesPerDay = totalPagesRead / entriesCount;
+    const averagePagesPerDay = (totalPagesRead / entriesCount).toFixed(0);
 
   return (
     <>
-      <h1>Statistics for pages read</h1>
+      <h1>Reading stats</h1>
 
-      {entriesCount > 0 ? (
+      {loading ? (
+        <p>Loading...</p>
+      ) : entriesCount > 0 ?
+        (
         <>
         <div>
-          <div>
-            <h4>Days read: {entriesCount}</h4>
-            <h4>Unique books read: {totalBooksRead}</h4>
-            <h4>Pages read: {totalPagesRead}</h4>
-            <h4>Average pages per day: {averagePagesPerDay}</h4>
+          <div className="stats-grid">
+            <h4 className="stats-card">Days read: {entriesCount}</h4>
+            <h4 className="stats-card">Unique books: {totalBooksRead}</h4>
+            <h4 className="stats-card">Pages read: {totalPagesRead}</h4>
+            <h4 className="stats-card">Average pages per day: {averagePagesPerDay}</h4>
           </div>
+          <br></br>
           <BarChart width={1000} height={400} data={days}>
-            <Bar dataKey="pagesRead" fill="#303030" />
+            <Bar name="Pages" dataKey="pagesRead" fill="#303030" />
             <XAxis
               dataKey="date"
               interval={range === "month" ? 0 : "preserveStartEnd"}
