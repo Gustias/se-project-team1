@@ -46,6 +46,19 @@ public class ReadingLogServiceTests
         });
     }
 
+    private static void AddOtherUserReadingLog(AppDbContext context)
+    {
+        context.ReadingLogs.Add(new ReadingLog
+        {
+            Id = 10,
+            BookId = 1,
+            UserId = 2,
+            StartPage = 10,
+            EndPage = 11,
+            Date = new DateOnly(2026, 11, 09)
+        });
+    }
+
     [Fact]
     public async Task CreateAsync_WhenUserDoesNotExist_ReturnsNull()
     {
@@ -211,5 +224,44 @@ public class ReadingLogServiceTests
 
         Assert.True(result);
         Assert.Empty(context.ReadingLogs);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenEntryBelongsToAnotherUser_ReturnsNull()
+    {
+        using var context = CreateContext();
+
+        AddOtherUserReadingLog(context);
+
+        await context.SaveChangesAsync();
+
+        var service = new ReadingLogService(context);
+
+        var result = await service.GetAsync(id: 10, userId: 1);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenEntryBelongsToAnotherUser_ReturnsFalse()
+    {
+        using var context = CreateContext();
+
+        AddOtherUserReadingLog(context);
+
+        await context.SaveChangesAsync();
+
+        var service = new ReadingLogService(context);
+
+        var result = await service.DeleteAsync(id: 10, userId: 1);
+
+        Assert.False(result);
+
+        var saved = await context.ReadingLogs
+            .AsNoTracking()
+            .SingleAsync();
+
+        Assert.Equal(10, saved.Id);
+        Assert.Equal(2, saved.UserId);
     }
 }
