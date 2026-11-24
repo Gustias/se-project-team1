@@ -82,4 +82,24 @@ public class BookRatingsController : ControllerBase
 
         return Ok(rating);
     }
+
+    [HttpGet("list")]
+    public async Task<IActionResult> GetAsync()
+    {
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var list = await _bookRatingService.GetListAsync(currentUserId.Value);
+
+        if (list.Count == 0)
+        {
+            return NotFound();
+        }
+
+        return Ok(list);
+    }
 }

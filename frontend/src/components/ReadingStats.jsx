@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {getReadingSummary} from "../api/client.js";
+import {getRatingList, getReadingSummary} from "../api/client.js";
 import {Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis} from "recharts";
 
 function fillMonths(days, from, to) {
@@ -78,17 +78,53 @@ function getRange(key) {
   return { from: "2000-01-01", to: toIso(today) };
 }
 
+function getHighestRatedBookTitle(ratingList) {
+  if (!ratingList || ratingList.length === 0) {
+    return "No ratings yet";
+  }
 
+  let highest = ratingList[0];
+
+  for (const book of ratingList) {
+    if (book.rating > highest.rating) {
+      highest = book;
+    }
+  }
+
+  return highest.title;
+}
+
+function getLowestRatedBookTitle(ratingList) {
+  if (!ratingList || ratingList.length === 0) {
+    return "No ratings yet";
+  }
+
+  let highest = ratingList[0];
+
+  for (const book of ratingList) {
+    if (book.rating < highest.rating) {
+      highest = book;
+    }
+  }
+
+  return highest.title;
+}
 
 export default function ReadingStats() {
   const [range, setRange] = useState("month"); // month, year, all
   const [days, setDays] = useState([]);
   const [totalBooksRead, setTotalBooksRead] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [ratingList, setRatingList] = useState([]);
 
   useEffect(() => {
     setLoading(true);
     const { from, to } = getRange(range);
+    getRatingList()
+      .then((data) => {
+        setRatingList(data)
+      })
+      .catch((err) => console.log(err))
     getReadingSummary(from, to)
       .then((data) => {
         setTotalBooksRead(data.totalBooksRead);
@@ -113,6 +149,8 @@ export default function ReadingStats() {
       totalPagesRead = totalPagesRead + day.pagesRead;
     }
     const averagePagesPerDay = (totalPagesRead / entriesCount).toFixed(0);
+    const lowestRatedBook = getLowestRatedBookTitle(ratingList);
+    const highestRatedBook = getHighestRatedBookTitle(ratingList);
 
   return (
     <>
@@ -129,6 +167,8 @@ export default function ReadingStats() {
             <h4 className="stats-card">Unique books: {totalBooksRead}</h4>
             <h4 className="stats-card">Pages read: {totalPagesRead}</h4>
             <h4 className="stats-card">Average pages per day: {averagePagesPerDay}</h4>
+            <h4 className="stats-card">Highest rated book: {lowestRatedBook}</h4>
+            <h4 className="stats-card">Lowest rated book: {highestRatedBook}</h4>
           </div>
           <br></br>
           <BarChart width={1000} height={400} data={days}>
