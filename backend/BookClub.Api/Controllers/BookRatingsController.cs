@@ -95,11 +95,6 @@ public class BookRatingsController : ControllerBase
 
         var list = await _bookRatingService.GetListAsync(currentUserId.Value);
 
-        if (list.Count == 0)
-        {
-            return NotFound();
-        }
-
         return Ok(list);
     }
 }
