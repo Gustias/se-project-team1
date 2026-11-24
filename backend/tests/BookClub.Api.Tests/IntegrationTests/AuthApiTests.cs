@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BookClub.Api.Tests.IntegrationTests;
 
@@ -43,6 +44,18 @@ public class AuthApiTests : IClassFixture<ApiFactory>
             new { userName = email, email, password = Password });
         Assert.True(response.IsSuccessStatusCode);
         return email;
+    }
+
+    private static async Task AssertValidationErrorAsync(
+        HttpResponseMessage response, string expectedField)
+    {
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+        var problem = await response.Content
+            .ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problem);
+        Assert.Contains(expectedField, problem.Errors.Keys);
     }
 
     [Fact]
@@ -115,5 +128,88 @@ public class AuthApiTests : IClassFixture<ApiFactory>
     {
         using var response = await _client.GetAsync("/api/auth/me");
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WhenEmailIsEmpty_Returns400()
+    {
+        using var response = await PostAsync("/api/auth/login",
+            new
+            {
+                email = "",
+                password = Password
+            });
+
+        await AssertValidationErrorAsync(response, "Email");
+    }
+
+    [Fact]
+    public async Task Login_WhenEmailIsInvalid_Returns400()
+    {
+        using var response = await PostAsync("/api/auth/login",
+            new
+            {
+                email = "invalid-email",
+                password = Password
+            });
+
+        await AssertValidationErrorAsync(response, "Email");
+    }
+
+    [Fact]
+    public async Task Login_WhenPasswordIsEmpty_Returns400()
+    {
+        using var response = await PostAsync("/api/auth/login",
+            new
+            {
+                email = NewEmail(),
+                password = ""
+            });
+
+        await AssertValidationErrorAsync(response, "Password");
+    }
+
+    [Fact]
+    public async Task Logout_WhenNotLoggedIn_Returns401()
+    {
+        using var response = await PostAsync("/api/auth/logout");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WithoutCsrfToken_Returns400()
+    {
+        var email = await RegisterAsync();
+        var body = new { email, password = Password };
+
+        using var rejected = await PostAsync(
+            "/api/auth/login", body, withCsrf: false);
+
+        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+
+        using var accepted = await PostAsync(
+            "/api/auth/login", body);
+
+        Assert.Equal(HttpStatusCode.OK, accepted.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_SessionPersistsAcrossRequests()
+    {
+        var email = await RegisterAsync();
+
+        using var login = await PostAsync("/api/auth/login",
+            new { email, password = Password });
+
+        Assert.Equal(HttpStatusCode.OK, login.StatusCode);
+
+        for (var i = 0; i < 3; i++)
+        {
+            using var response = await _client.GetAsync("/api/auth/me");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Contains(email, await response.Content.ReadAsStringAsync());
+        }
     }
 }
