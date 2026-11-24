@@ -2,6 +2,7 @@ using BookClub.Api.Data;
 using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using Microsoft.EntityFrameworkCore;
+using BookClub.Api.Exceptions;
 
 namespace BookClub.Api.Services;
 
@@ -24,7 +25,11 @@ public class ReadingLogService
     {
 
         var book = await _dbContext.Books.FindAsync(bookId);
-        if (book is null) return null;
+        if (book is null)
+        {
+            throw new BookNotFoundException(bookId);
+        }
+        
         var user = await _dbContext.Users.FindAsync(userId);
         if (user is null) return null;
 
