@@ -29,7 +29,7 @@ public class ReadingLogService
         {
             throw new BookNotFoundException(bookId);
         }
-        
+
         var user = await _dbContext.Users.FindAsync(userId);
         if (user is null) return null;
 
@@ -74,11 +74,17 @@ public class ReadingLogService
             })
             .OrderBy(d => d.Date)
             .ToListAsync();
+        var totalBooksRead = await _dbContext.ReadingLogs
+            .Where(l => l.UserId == userId && l.Date >= from && l.Date <= to)
+            .Select(l => l.BookId)
+            .Distinct()
+            .CountAsync();
         return new ReadingSummaryDto
         {
             From = from,
             To = to,
             TotalPages = days.Sum(d => d.PagesRead),
+            TotalBooksRead = totalBooksRead,
             Days = days
         };
     }

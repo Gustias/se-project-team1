@@ -83,11 +83,13 @@ function getRange(key) {
 export default function ReadingStats() {
   const [range, setRange] = useState("month"); // month, year, all
   const [days, setDays] = useState([]);
+  const [totalBooksRead, setTotalBooksRead] = useState([]);
 
   useEffect(() => {
     const { from, to } = getRange(range);
     getReadingSummary(from, to)
       .then((data) => {
+        setTotalBooksRead(data.totalBooksRead);
         if (range === "month") {
           setDays(fillDays(data.days, from, to));
         } else if (data.days.length === 0) {
@@ -101,23 +103,50 @@ export default function ReadingStats() {
       })
       .catch((err) => console.log(err));
   }, [range]);
+
+    const entriesCount = days.filter(d => d.pagesRead > 0).length; // aggregated entries, not actual ones
+    let totalPagesRead = 0;
+    for (const day of days) {
+      totalPagesRead = totalPagesRead + day.pagesRead;
+    }
+    const averagePagesPerDay = totalPagesRead / entriesCount;
+
   return (
     <>
-      <h1>Stats for pages read</h1>
-      <div>
-        <BarChart width={1000} height={400} data={days}>
-          <Bar dataKey="pagesRead" fill="#303030" />
-          <XAxis dataKey="date" interval={range === "month" ? 0 : "preserveStartEnd"} tickFormatter={(d) => (range === "month" ? Number(d.slice(8)) : d)} />
-          <YAxis dataKey="pagesRead" allowDecimals={false}/>
-          <Tooltip />
-          <CartesianGrid stroke="#484848  " />
-        </BarChart>
-      </div>
-      <div>
-        <button onClick={() => setRange("month")}>Last 30 days</button>
-        <button onClick={() => setRange("year")}>Last 1 year</button>
-        <button onClick={() => setRange("all")}>All</button>
-      </div>
+      <h1>Statistics for pages read</h1>
+
+      {entriesCount > 0 ? (
+        <>
+        <div>
+          <div>
+            <h4>Days read: {entriesCount}</h4>
+            <h4>Unique books read: {totalBooksRead}</h4>
+            <h4>Pages read: {totalPagesRead}</h4>
+            <h4>Average pages per day: {averagePagesPerDay}</h4>
+          </div>
+          <BarChart width={1000} height={400} data={days}>
+            <Bar dataKey="pagesRead" fill="#303030" />
+            <XAxis
+              dataKey="date"
+              interval={range === "month" ? 0 : "preserveStartEnd"}
+              tickFormatter={(d) => (range === "month" ? Number(d.slice(8)) : d)}
+            />
+            <YAxis dataKey="pagesRead" allowDecimals={false} />
+            <Tooltip />
+            <CartesianGrid stroke="#484848" />
+          </BarChart>
+        </div>
+          <div>
+            <button onClick={() => setRange("month")}>Last 30 days</button>
+            <button onClick={() => setRange("year")}>Last 1 year</button>
+            <button onClick={() => setRange("all")}>All</button>
+          </div>
+        </>
+      ) : (
+        <div>
+          <h4>No entries found.</h4>
+        </div>
+      )}
     </>
   );
 }
