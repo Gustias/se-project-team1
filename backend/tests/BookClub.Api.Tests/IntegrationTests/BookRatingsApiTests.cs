@@ -74,6 +74,8 @@ public class BookRatingsApiTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Get_UnknownId_Returns404()
     {
+        await _api.RegisterAndLoginAsync();
+
         using var response = await _api.Http.GetAsync("/api/book-ratings/999999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

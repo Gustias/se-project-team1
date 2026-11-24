@@ -64,7 +64,7 @@ public class ReadingLogApiTests : IClassFixture<ApiFactory>
         (await LogAsync(userId, bookId, 40, 50, "2026-11-10")).Dispose(); // 10 pages, next day
 
         var summary = await _api.Http.GetFromJsonAsync<SummaryView>(
-            $"/api/reading-log/summary/{userId}?from=2026-11-01&to=2026-11-30");
+            "/api/reading-log/summary?from=2026-11-01&to=2026-11-30");
 
         Assert.Equal(25, summary!.TotalPages);
         Assert.Equal(2, summary.Days.Count);
@@ -74,7 +74,10 @@ public class ReadingLogApiTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Summary_WhenToIsBeforeFrom_Returns400()
     {
-        using var response = await _api.Http.GetAsync("/api/reading-log/summary/1?from=2026-11-30&to=2026-11-01");
+        await _api.RegisterAndLoginAsync();
+
+        using var response = await _api.Http.GetAsync(
+            "/api/reading-log/summary?from=2026-11-30&to=2026-11-01");
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }

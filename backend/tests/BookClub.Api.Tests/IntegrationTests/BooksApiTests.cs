@@ -14,6 +14,8 @@ public class BooksApiTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Create_ThenGet_ReturnsTheSameBook()
     {
+        await _api.RegisterAndLoginAsync();
+
         var body = new
         {
             externalId = Guid.NewGuid().ToString(),
@@ -36,6 +38,8 @@ public class BooksApiTests : IClassFixture<ApiFactory>
     [Fact]
     public async Task Create_WhenTitleIsEmpty_Returns400_BecauseOfTitleValidation()
     {
+        await _api.RegisterAndLoginAsync();
+
         var body = new
         {
             externalId = Guid.NewGuid().ToString(),
@@ -47,7 +51,6 @@ public class BooksApiTests : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-        // the 400 must be about the title, not some other problem with the request
         var content = await response.Content.ReadAsStringAsync();
         Assert.Contains("title", content, StringComparison.OrdinalIgnoreCase);
     }
