@@ -1,6 +1,6 @@
 namespace BookClub.Api.Models;
 
-public class ReadingLog
+public class ReadingLog : IUserOwnedEntity
 {
     public int Id { get; set; }
     public User User { get; set; } = null!;

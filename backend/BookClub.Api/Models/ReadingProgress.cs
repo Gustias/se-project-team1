@@ -7,7 +7,7 @@ public enum ReadingStatus
     WantToRead
 }
 
-public class ReadingProgress
+public class ReadingProgress : IUserOwnedEntity
 {
     public int Id { get; set; }
     public required int UserId { get; set; }
