@@ -15,20 +15,27 @@ public class OwnedEntityRepository<TEntity>
 
     public async Task<TEntity?> GetEntityAsync(
         int id,
-        int userId)
+        int userId,
+        CancellationToken cancellationToken = default)
     {
         return await _dbContext.Set<TEntity>()
-            .FirstOrDefaultAsync(entity =>
-                entity.Id == id &&
-                entity.UserId == userId);
+            .FirstOrDefaultAsync(
+                entity =>
+                    entity.Id == id &&
+                    entity.UserId == userId,
+                cancellationToken);
     }
 
     public async Task<TResult?> GetMappedAsync<TResult>(
         int id,
         int userId,
-        Func<TEntity, TResult> mapper)
+        Func<TEntity, TResult> mapper,
+        CancellationToken cancellationToken = default)
     {
-        var entity = await GetEntityAsync(id, userId);
+        var entity = await GetEntityAsync(
+            id,
+            userId,
+            cancellationToken);
 
         if (entity is null)
         {
@@ -40,9 +47,13 @@ public class OwnedEntityRepository<TEntity>
 
     public async Task<bool> DeleteAsync(
         int id,
-        int userId)
+        int userId,
+        CancellationToken cancellationToken = default)
     {
-        var entity = await GetEntityAsync(id, userId);
+        var entity = await GetEntityAsync(
+            id,
+            userId,
+            cancellationToken);
 
         if (entity is null)
         {
@@ -50,7 +61,9 @@ public class OwnedEntityRepository<TEntity>
         }
 
         _dbContext.Set<TEntity>().Remove(entity);
-        await _dbContext.SaveChangesAsync();
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
 
         return true;
     }
