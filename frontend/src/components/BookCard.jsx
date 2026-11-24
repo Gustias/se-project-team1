@@ -46,7 +46,6 @@ function BookCard({ book }) {
       setSavedBookId(savedBook.id);
 
       const readingProgress = await client.createReadingProgress({
-        userId: 1,
         bookId: savedBook.id,
         progress: 0,
         lastChapterRead: null,
@@ -104,7 +103,6 @@ function BookCard({ book }) {
 
     try {
       await client.createBookRating({
-        userId: 1,
         bookId: savedBookId,
         rating,
       });

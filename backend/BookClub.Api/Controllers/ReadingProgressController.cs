@@ -1,9 +1,12 @@
 using BookClub.Api.DTOs;
 using BookClub.Api.Services;
+using BookClub.Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BookClub.Api.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/reading-progress")]
 public class ReadingProgressController : ControllerBase
@@ -20,8 +23,15 @@ public class ReadingProgressController : ControllerBase
     public async Task<IActionResult> CreateEntry(
         CreateReadingProgressDto request)
     {
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
         var entry = await _readingProgressService.CreateAsync(
-            request.UserId,
+            currentUserId.Value,
             request.BookId,
             request.Progress,
             request.LastChapterRead,
@@ -46,8 +56,16 @@ public class ReadingProgressController : ControllerBase
         int id,
         UpdateReadingProgressDto request)
     {
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
         var updated = await _readingProgressService.UpdateAsync(
             id,
+            currentUserId.Value,
             request.Progress,
             request.LastChapterRead,
             request.Status);
@@ -63,7 +81,16 @@ public class ReadingProgressController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteEntry(int id)
     {
-        var deleted = await _readingProgressService.DeleteAsync(id);
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var deleted = await _readingProgressService.DeleteAsync(
+            id,
+            currentUserId.Value);
 
         if (!deleted)
         {
@@ -76,7 +103,16 @@ public class ReadingProgressController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEntry(int id)
     {
-        var entry = await _readingProgressService.GetAsync(id);
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var entry = await _readingProgressService.GetAsync(
+            id,
+            currentUserId.Value);
 
         if (entry is null)
         {
