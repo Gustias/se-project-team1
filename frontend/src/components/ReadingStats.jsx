@@ -167,8 +167,22 @@ export default function ReadingStats() {
             <h4 className="stats-card">Unique books: {totalBooksRead}</h4>
             <h4 className="stats-card">Pages read: {totalPagesRead}</h4>
             <h4 className="stats-card">Average pages per day: {averagePagesPerDay}</h4>
-            <h4 className="stats-card">Highest rated book: {lowestRatedBook}</h4>
-            <h4 className="stats-card">Lowest rated book: {highestRatedBook}</h4>
+            {ratingList.length === 1 ? (
+              <h4 className={`stats-card ${ratingList.length === 1 ? "centered-card" : ""}`}>
+                Only rated book: {ratingList[0].title} ({ratingList[0].rating})
+              </h4>
+            ) : ratingList.length > 1 ? (
+              <>
+                <h4 className="stats-card">
+                  Highest rated book: {getHighestRatedBookTitle(ratingList)}
+                </h4>
+                <h4 className="stats-card">
+                  Lowest rated book: {getLowestRatedBookTitle(ratingList)}
+                </h4>
+              </>
+            ) : (
+              <h4 className="stats-card">No ratings yet</h4>
+            )}
           </div>
           <br></br>
           <BarChart width={1000} height={400} data={days}>
