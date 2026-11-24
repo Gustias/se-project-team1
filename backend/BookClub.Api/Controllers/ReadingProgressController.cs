@@ -37,14 +37,6 @@ public class ReadingProgressController : ControllerBase
             request.LastChapterRead,
             request.Status);
 
-        if (entry is null)
-        {
-            return Conflict(new
-            {
-                message = "Reading progress for this user and book already exists."
-            });
-        }
-
         return CreatedAtAction(
             nameof(GetEntry),
             new { id = entry.Id },

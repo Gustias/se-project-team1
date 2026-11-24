@@ -2,6 +2,7 @@ using BookClub.Api.Data;
 using BookClub.Api.Models;
 using BookClub.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using BookClub.Api.Exceptions;
 
 namespace BookClub.Api.Tests;
 
@@ -59,16 +60,21 @@ public class ReadingLogServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_WhenBookDoesNotExist_ReturnsNull()
+    public async Task CreateAsync_WhenBookDoesNotExist_ThrowsBookNotFoundException()
     {
         using var context = CreateContext();
         CreateMockUserEntry(context);
         context.SaveChanges();
 
         var service = new ReadingLogService(context);
-        var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026, 11, 09));
 
-        Assert.Null(result);
+        await Assert.ThrowsAsync<BookNotFoundException>(() =>
+            service.CreateAsync(
+                1,
+                1,
+                10,
+                11,
+                new DateOnly(2026, 11, 09)));
     }
 
     [Fact]

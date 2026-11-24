@@ -44,13 +44,13 @@ public class ReadingLogApiTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
-    public async Task Create_ForMissingBook_Returns400()
+    public async Task Create_ForMissingBook_Returns404()
     {
         var userId = await _api.RegisterAndLoginAsync();
 
         using var response = await LogAsync(userId, 999_999, 1, 5, "2026-11-09");
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

@@ -15,6 +15,7 @@ public class AuthController : ControllerBase
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly IAntiforgery _antiforgery;
+
     public AuthController(
         UserManager<User> userManager,
         SignInManager<User> signInManager,
@@ -44,14 +45,29 @@ public class AuthController : ControllerBase
             Email = request.Email
         };
 
-        var result = await _userManager.CreateAsync(user, request.Password);
+        var result = await _userManager.CreateAsync(
+            user,
+            request.Password);
 
         if (!result.Succeeded)
         {
+            var safeErrors = result.Errors
+                .Where(error =>
+                    error.Code != "DuplicateEmail" &&
+                    error.Code != "DuplicateUserName")
+                .Select(error => error.Description)
+                .ToList();
+
+            if (safeErrors.Count == 0)
+            {
+                safeErrors.Add(
+                    "Registration could not be completed.");
+            }
+
             return BadRequest(new
             {
                 Message = "Registration failed.",
-                Errors = result.Errors.Select(e => e.Description)
+                Errors = safeErrors
             });
         }
 
@@ -64,9 +80,10 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        var user = await _userManager.FindByEmailAsync(request.Email);
+        var user =
+            await _userManager.FindByEmailAsync(request.Email);
 
-        if (user == null)
+        if (user is null)
         {
             return Unauthorized(new
             {
@@ -78,8 +95,7 @@ public class AuthController : ControllerBase
             user,
             request.Password,
             isPersistent: true,
-            lockoutOnFailure: true
-        );
+            lockoutOnFailure: true);
 
         if (!result.Succeeded)
         {
@@ -101,7 +117,10 @@ public class AuthController : ControllerBase
     {
         await _signInManager.SignOutAsync();
 
-        return Ok(new { message = "Logged out successfully." });
+        return Ok(new
+        {
+            Message = "Logged out successfully."
+        });
     }
 
     [HttpGet("me")]
@@ -110,7 +129,7 @@ public class AuthController : ControllerBase
     {
         var user = await _userManager.GetUserAsync(User);
 
-        if (user == null)
+        if (user is null)
         {
             return Unauthorized();
         }

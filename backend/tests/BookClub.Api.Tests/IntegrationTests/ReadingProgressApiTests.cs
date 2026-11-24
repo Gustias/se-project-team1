@@ -51,7 +51,7 @@ public class ReadingProgressApiTests : IClassFixture<ApiFactory>
         using var response = await _api.PostAsync("/api/reading-progress",
             new { userId, bookId = 999999, progress = 0, status = Reading });
 
-        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]

@@ -1,6 +1,7 @@
 using BookClub.Api.Data;
 using BookClub.Api.DTOs;
 using BookClub.Api.Models;
+using BookClub.Api.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookClub.Api.Services;
@@ -14,7 +15,7 @@ public class ReadingProgressService
         _dbContext = dbContext;
     }
 
-    public async Task<GetReadingProgressDto?> CreateAsync(
+    public async Task<GetReadingProgressDto> CreateAsync(
         int userId,
         int bookId,
         int progress,
@@ -25,7 +26,7 @@ public class ReadingProgressService
 
         if (book is null)
         {
-            return null;
+            throw new BookNotFoundException(bookId);
         }
 
         var existing = await _dbContext.ReadingProgresses
@@ -35,7 +36,7 @@ public class ReadingProgressService
 
         if (existing is not null)
         {
-            return null;
+            throw new ReadingProgressAlreadyExistsException();
         }
 
         var entry = new ReadingProgress

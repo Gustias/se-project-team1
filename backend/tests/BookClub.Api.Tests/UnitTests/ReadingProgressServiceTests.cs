@@ -1,6 +1,7 @@
 using BookClub.Api.Data;
 using BookClub.Api.Models;
 using BookClub.Api.Services;
+using BookClub.Api.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookClub.Api.Tests;
@@ -39,29 +40,46 @@ public class ReadingProgressServiceTests
     }
 
     [Fact]
-    public async Task CreateAsync_WhenBookDoesNotExist_ReturnsNull()
+    public async Task CreateAsync_WhenBookDoesNotExist_ThrowsBookNotFoundException()
     {
         using var context = CreateContext();
 
         var service = new ReadingProgressService(context);
-        var result = await service.CreateAsync(1, 1, 10, "Chapter 1", ReadingStatus.Reading);
 
-        Assert.Null(result);
+        await Assert.ThrowsAsync<BookNotFoundException>(() =>
+            service.CreateAsync(
+                1,
+                1,
+                10,
+                "Chapter 1",
+                ReadingStatus.Reading));
+
         Assert.Empty(context.ReadingProgresses);
     }
 
     [Fact]
-    public async Task CreateAsync_WhenUserAlreadyHasProgressForBook_ReturnsNull()
+    public async Task CreateAsync_WhenUserAlreadyHasProgressForBook_ThrowsReadingProgressAlreadyExistsException()
     {
         using var context = CreateContext();
         CreateMockBookEntry(context);
-        AddReadingProgress(context, 1, 1, ReadingStatus.Reading);
-        context.SaveChanges();
+        AddReadingProgress(
+            context,
+            1,
+            1,
+            ReadingStatus.Reading);
+
+        await context.SaveChangesAsync();
 
         var service = new ReadingProgressService(context);
-        var result = await service.CreateAsync(1, 1, 50, "Chapter 5", ReadingStatus.Read);
 
-        Assert.Null(result);
+        await Assert.ThrowsAsync<ReadingProgressAlreadyExistsException>(() =>
+            service.CreateAsync(
+                1,
+                1,
+                50,
+                "Chapter 5",
+                ReadingStatus.Read));
+
         Assert.Single(context.ReadingProgresses);
     }
 
