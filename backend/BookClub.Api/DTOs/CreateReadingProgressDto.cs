@@ -17,4 +17,7 @@ public class CreateReadingProgressDto
 
     [EnumDataType(typeof(ReadingStatus))]
     public ReadingStatus Status { get; set; }
+
+    [Range(0, 100000)]
+    public int? PagesRead { get; set; }
 }

@@ -18,4 +18,6 @@ public class ReadingProgress
     public string? LastChapterRead { get; set; }
     public DateOnly? DateRead { get; set; }
     public ReadingStatus Status { get; set; }
+
+    public int PagesRead { get; set; }
 }

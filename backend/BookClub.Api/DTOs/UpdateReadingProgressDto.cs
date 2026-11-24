@@ -11,4 +11,7 @@ public class UpdateReadingProgressDto
     public string? LastChapterRead { get; set; }
     [EnumDataType(typeof(ReadingStatus))]
     public ReadingStatus Status { get; set; }
+
+    [Range(0, 100000)]
+    public int? PagesRead { get; set; }
 }
