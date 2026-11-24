@@ -144,6 +144,7 @@ export async function createReadingProgress({
   progress,
   lastChapterRead,
   status,
+  pagesRead,
 }) {
   const csrfToken = await getCsrfToken();
   
@@ -159,8 +160,20 @@ export async function createReadingProgress({
       progress,
       lastChapterRead: lastChapterRead ?? null,
       status,
+      pagesRead: pagesRead ?? null,
     }),
   });
+  return handle(response);
+}
+
+// The current user's reading progress for a work, or null if there is none yet.
+export async function getReadingProgressByWork(externalId, signal) {
+  const response = await fetch(
+    `${BASE_URL}/api/reading-progress/by-work/${encodeURIComponent(toWorkId(externalId))}`,
+    { credentials: "include", signal },
+  );
+
+  if (response.status === 404) return null;
   return handle(response);
 }
 
@@ -174,7 +187,12 @@ export async function getReadingProgress(id) {
 
 export async function updateReadingProgress(
   id,
-  { progress, lastChapterRead, status }) {
+  {
+    progress,
+    lastChapterRead,
+    status,
+    pagesRead,
+  }) {
   const csrfToken = await getCsrfToken();
 
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
@@ -188,6 +206,7 @@ export async function updateReadingProgress(
       progress,
       lastChapterRead: lastChapterRead ?? null,
       status,
+      pagesRead: pagesRead ?? null,
     }),
   });
 

@@ -6,6 +6,7 @@ import { client } from "../../api/index.js";
 const TABS = [
   { to: ".", label: "Overview", end: true },
   { to: "editions", label: "Editions" },
+  { to: "progress", label: "Reading progress" },
 ];
 
 export function descriptionText(description) {

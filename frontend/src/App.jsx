@@ -6,6 +6,7 @@ import Register from "./components/Register.jsx";
 import BookPage from "./pages/book/BookPage.jsx";
 import BookOverview from "./pages/book/BookOverview.jsx";
 import BookEditions from "./pages/book/BookEditions.jsx";
+import BookReadingProgress from "./pages/book/BookReadingProgress.jsx";
 import { useEffect, useState } from "react";
 import { getCurrentUser, logout } from "./api/client.js";
 
@@ -76,6 +77,7 @@ function App() {
         <Route path="/books/:externalId" element={<BookPage />}>
           <Route index element={<BookOverview />} />
           <Route path="editions" element={<BookEditions />} />
+          <Route path="progress" element={<BookReadingProgress />} />
         </Route>
         <Route path="/stats" element={<ReadingStats />} />
         <Route 
