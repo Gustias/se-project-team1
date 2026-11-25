@@ -35,7 +35,9 @@ public class ReadingProgressController : ControllerBase
             request.BookId,
             request.Progress,
             request.LastChapterRead,
-            request.Status);
+            request.Status,
+            request.TotalPages,
+            request.PagesRead);
 
         return CreatedAtAction(
             nameof(GetEntry),
@@ -60,7 +62,9 @@ public class ReadingProgressController : ControllerBase
             currentUserId.Value,
             request.Progress,
             request.LastChapterRead,
-            request.Status);
+            request.Status,
+            request.TotalPages,
+            request.PagesRead);
 
         if (updated is null)
         {
@@ -90,6 +94,29 @@ public class ReadingProgressController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    // The current user's entry for a work, e.g. GET api/reading-progress/by-work/OL45883W
+    [HttpGet("by-work/{workExternalId}")]
+    public async Task<IActionResult> GetEntryByWork(string workExternalId)
+    {
+        var currentUserId = User.GetUserId();
+
+        if (currentUserId is null)
+        {
+            return Unauthorized();
+        }
+
+        var entry = await _readingProgressService.GetByWorkAsync(
+            workExternalId,
+            currentUserId.Value);
+
+        if (entry is null)
+        {
+            return NotFound();
+        }
+
+        return Ok(entry);
     }
 
     [HttpGet("{id}")]
