@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { Link, useLocation, useOutletContext } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import { useOutletContext } from "react-router-dom";
 import { client } from "../../api/index.js";
 import { ReadingStatus } from "../../constants/readingStatus.js";
 
 const PAGE_SIZE = 20;
+const MAX_CHAPTER_LENGTH = 200;
 
 // Same look as the Editions tab, plus a button to choose the edition.
 function EditionPickRow({ edition, selected, onSelect }) {
@@ -50,9 +51,19 @@ function EditionPickRow({ edition, selected, onSelect }) {
   );
 }
 
+// Finished books stay finished; a new or "want to read" entry becomes "reading".
+function nextStatus(entry, completed) {
+  if (completed || entry?.status === ReadingStatus.Read) {
+    return ReadingStatus.Read;
+  }
+  if (!entry || entry.status === ReadingStatus.WantToRead) {
+    return ReadingStatus.Reading;
+  }
+  return entry.status;
+}
+
 function BookReadingProgress() {
   const { book, externalId } = useOutletContext();
-  const location = useLocation();
 
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
@@ -65,9 +76,14 @@ function BookReadingProgress() {
   const [editionId, setEditionId] = useState("");
   const [pagesRead, setPagesRead] = useState("0");
   const [lastChapter, setLastChapter] = useState("");
+  const [customTotal, setCustomTotal] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+
+  // Lets us cancel an in-flight "Load more" when the book changes.
+  const loadMoreController = useRef(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -81,6 +97,9 @@ function BookReadingProgress() {
     setNextOffset(0);
     setEditionId("");
     setEditionsLoading(false);
+    setLoadingMore(false);
+    setConfirmingReset(false);
+    setCustomTotal("");
     setLastChapter("");
 
     (async () => {
@@ -103,12 +122,16 @@ function BookReadingProgress() {
       }
     })();
 
-    return () => controller.abort();
+    return () => {
+      controller.abort();
+      loadMoreController.current?.abort();
+    };
   }, [externalId]);
 
   // Editions load separately, so the progress UI never waits on them.
   // Needed for new entries and for old entries that have no total yet.
-  const wantsEditions = Boolean(user) && !loading && (!entry || entry.totalPages == null);
+  const wantsEditions =
+    Boolean(user) && !loading && (!entry || entry.totalPages == null);
 
   useEffect(() => {
     if (!wantsEditions) return;
@@ -116,11 +139,15 @@ function BookReadingProgress() {
 
     setEditionsLoading(true);
     client
-      .getWorkEditions(externalId, { limit: PAGE_SIZE, offset: 0 }, controller.signal)
+      .getWorkEditions(
+        externalId,
+        { limit: PAGE_SIZE, offset: 0 },
+        controller.signal,
+      )
       .then((result) => {
         setEditions(result.editions);
         setTotalEditions(result.total);
-        setNextOffset(PAGE_SIZE);
+        setNextOffset(result.editions.length);
       })
       .catch((err) => {
         if (err.name !== "AbortError") setError(err.message);
@@ -133,21 +160,27 @@ function BookReadingProgress() {
   }, [externalId, wantsEditions]);
 
   async function handleLoadMore() {
+    loadMoreController.current?.abort();
+    const controller = new AbortController();
+    loadMoreController.current = controller;
+
     setLoadingMore(true);
     setError("");
 
     try {
-      const result = await client.getWorkEditions(externalId, {
-        limit: PAGE_SIZE,
-        offset: nextOffset,
-      });
+      const result = await client.getWorkEditions(
+        externalId,
+        { limit: PAGE_SIZE, offset: nextOffset },
+        controller.signal,
+      );
       setEditions((prev) => [...prev, ...result.editions]);
       setTotalEditions(result.total);
-      setNextOffset((prev) => prev + PAGE_SIZE);
+      // Advance by what we actually received, not by the requested page size.
+      setNextOffset((prev) => prev + result.editions.length);
     } catch (err) {
-      setError(err.message);
+      if (err.name !== "AbortError") setError(err.message);
     } finally {
-      setLoadingMore(false);
+      if (!controller.signal.aborted) setLoadingMore(false);
     }
   }
 
@@ -160,21 +193,45 @@ function BookReadingProgress() {
   const showPicker = wantsEditions && (editionsLoading || editions.length > 0);
   // Only a brand-new entry must pick one; old entries can still update without it.
   const needsEdition = !entry && (editionsLoading || editions.length > 0);
-  // Chosen edition on first save, then the total stored on the entry.
-  const totalPages = selectedEdition?.pageCount ?? entry?.totalPages ?? null;
+  // The chosen edition has no page count, so the user can type the total.
+  const needsCustomTotal =
+    wantsEditions && Boolean(selectedEdition) && !(selectedEdition.pageCount > 0);
+  const customTotalNumber = Number(customTotal);
+  const customTotalValid =
+    Number.isInteger(customTotalNumber) && customTotalNumber > 0;
+  // Typed total, else the chosen edition's count, else the total stored on the entry.
+  const totalPages = needsCustomTotal
+    ? customTotalValid
+      ? customTotalNumber
+      : null
+    : selectedEdition?.pageCount || entry?.totalPages || null;
+  const hasTotal = totalPages > 0;
 
-  const valid =
-    pagesRead !== "" &&
-    Number.isInteger(pagesNumber) &&
-    pagesNumber >= 0 &&
-    (!totalPages || pagesNumber <= totalPages) &&
-    lastChapter.length <= 200 &&
-    (!needsEdition || Boolean(selectedEdition));
+  // One place decides what is wrong, so the message always matches the check.
+  let validationError = null;
+  if (needsEdition && !selectedEdition) {
+    validationError = editionsLoading
+      ? "Loading editions..."
+      : "Choose an edition first.";
+  } else if (needsCustomTotal && customTotal !== "" && !customTotalValid) {
+    validationError = "Enter the total pages as a whole number above 0.";
+  } else if (pagesRead === "" || !Number.isInteger(pagesNumber) || pagesNumber < 0) {
+    validationError = "Enter a whole number, 0 or more.";
+  } else if (hasTotal && pagesNumber > totalPages) {
+    validationError = `This edition has ${totalPages} pages.`;
+  } else if (lastChapter.length > MAX_CHAPTER_LENGTH) {
+    validationError = `Last chapter must be ${MAX_CHAPTER_LENGTH} characters or fewer.`;
+  }
+  const valid = validationError === null;
 
   const percent =
-    entry && totalPages
+    entry && hasTotal
       ? Math.min(100, Math.round(((entry.pagesRead ?? 0) / totalPages) * 100))
       : null;
+
+  // Without a known total we fall back to the typed value, which must be positive.
+  const finishPages = hasTotal ? totalPages : pagesNumber;
+  const canFinish = Number.isInteger(finishPages) && finishPages > 0;
 
   async function handleSave(event) {
     event.preventDefault();
@@ -184,14 +241,10 @@ function BookReadingProgress() {
     setMessage("");
     setError("");
 
-    // Reading pages means you're reading; don't downgrade a finished book.
-    const status =
-      !entry || entry.status === ReadingStatus.WantToRead
-        ? ReadingStatus.Reading
-        : entry.status;
+    const completed = hasTotal && pagesNumber >= totalPages;
+    const status = nextStatus(entry, completed);
 
-    // Backend "progress" is a 0-100 percent; keep it in sync when we know the total.
-    const progress = totalPages
+    const progress = hasTotal
       ? Math.min(100, Math.round((pagesNumber / totalPages) * 100))
       : (entry?.progress ?? 0);
 
@@ -209,7 +262,6 @@ function BookReadingProgress() {
           totalPages,
         });
       } else {
-        // Not on the user's list yet: save the book, then start tracking it.
         const savedBook = await client.createBook({
           externalId: client.toWorkId(externalId),
           isbn10: selectedEdition?.isbn10 ?? null,
@@ -229,7 +281,9 @@ function BookReadingProgress() {
       }
 
       setEntry(saved);
-      setMessage("Progress saved.");
+      setMessage(
+        status === ReadingStatus.Read ? "Book completed!" : "Progress saved.",
+      );
     } catch (err) {
       setError(err.message || "Could not save progress.");
     } finally {
@@ -237,23 +291,72 @@ function BookReadingProgress() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="book-section">
-        <p>Loading...</p>
-      </div>
-    );
+  async function handleMarkAsFinished() {
+    if (!entry || !canFinish) return;
+
+    setSaving(true);
+    setMessage("");
+    setError("");
+
+    try {
+      const saved = await client.updateReadingProgress(entry.id, {
+        status: ReadingStatus.Read,
+        progress: 100,
+        pagesRead: finishPages,
+        totalPages,
+      });
+
+      setEntry(saved);
+      setPagesRead(String(finishPages));
+      setMessage("Book completed!");
+    } catch (err) {
+      setError(err.message || "Could not finish book.");
+    } finally {
+      setSaving(false);
+    }
   }
 
-  if (!user) {
-    return (
-      <div className="book-section">
-        <p>
-          <Link to="/login" state={{ from: location.pathname }}>Log in</Link> to track
-          your reading progress.
-        </p>
-      </div>
-    );
+  // A typed total belongs to one edition, so picking another clears it.
+  function handleSelectEdition(id) {
+    if (id !== editionId) setCustomTotal("");
+    setEditionId(id);
+    setMessage("");
+  }
+
+  // Deletes the entry. With no entry, the edition picker comes back on its own.
+  async function handleReset() {
+    if (!entry) return;
+
+    setSaving(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await client.deleteReadingProgress(entry.id);
+
+      setEntry(null);
+      setEditionId("");
+      setCustomTotal("");
+      setPagesRead("0");
+      setLastChapter("");
+      setConfirmingReset(false);
+      setMessage("Progress cleared.");
+    } catch (err) {
+      setError(err.message || "Could not clear progress.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // Editing a field makes any earlier "saved" message out of date.
+  function handlePagesChange(event) {
+    setPagesRead(event.target.value);
+    setMessage("");
+  }
+
+  function handleChapterChange(event) {
+    setLastChapter(event.target.value);
+    setMessage("");
   }
 
   return (
@@ -263,11 +366,11 @@ function BookReadingProgress() {
       {entry ? (
         <>
           <p className="meta">
-            {totalPages
+            {hasTotal
               ? `You've read ${entry.pagesRead ?? 0} of ${totalPages} pages (${percent}%).`
               : `You've read ${entry.pagesRead ?? 0} pages so far.`}
           </p>
-          {totalPages && (
+          {hasTotal && (
             <progress
               value={entry.pagesRead ?? 0}
               max={totalPages}
@@ -277,6 +380,9 @@ function BookReadingProgress() {
           )}
           {entry.lastChapterRead && (
             <p className="meta">Last chapter read: {entry.lastChapterRead}</p>
+          )}
+          {entry.status === ReadingStatus.Read && (
+            <p className="progress-success">You've finished this book!</p>
           )}
         </>
       ) : (
@@ -298,7 +404,7 @@ function BookReadingProgress() {
                 key={edition.externalId}
                 edition={edition}
                 selected={selectedEdition?.externalId === edition.externalId}
-                onSelect={setEditionId}
+                onSelect={handleSelectEdition}
               />
             ))}
           </ul>
@@ -314,43 +420,96 @@ function BookReadingProgress() {
       )}
 
       <form className="progress-form" onSubmit={handleSave}>
+        {needsCustomTotal && (
+          <label>
+            Total pages (this edition has no page count, optional)
+            <input
+              type="number"
+              min="1"
+              step="1"
+              placeholder="e.g. 320"
+              value={customTotal}
+              onChange={(e) => {
+                setCustomTotal(e.target.value);
+                setMessage("");
+              }}
+            />
+          </label>
+        )}
         <label>
-          {totalPages ? `Pages read (of ${totalPages})` : "Pages read"}
+          {hasTotal ? `Pages read (of ${totalPages})` : "Pages read"}
           <input
             type="number"
             min="0"
             step="1"
-            max={totalPages || undefined}
+            max={hasTotal ? totalPages : undefined}
             value={pagesRead}
-            onChange={(e) => setPagesRead(e.target.value)}
+            onChange={handlePagesChange}
           />
         </label>
         <label>
           Last chapter read
           <input
             type="text"
-            maxLength={200}
+            maxLength={MAX_CHAPTER_LENGTH}
             placeholder="e.g. Chapter 12"
             value={lastChapter}
-            onChange={(e) => setLastChapter(e.target.value)}
+            onChange={handleChapterChange}
           />
         </label>
-        <button type="submit" className="edition-pick" disabled={!valid || saving}>
+        <button
+          type="submit"
+          className="edition-pick"
+          disabled={!valid || saving}
+        >
           {saving ? "Saving..." : entry ? "Update progress" : "Start tracking"}
         </button>
+
+        {entry && entry.status !== ReadingStatus.Read && (
+          <button
+            type="button"
+            className="edition-pick"
+            disabled={saving || !canFinish}
+            onClick={handleMarkAsFinished}
+          >
+            Mark as finished
+          </button>
+        )}
+
+        {entry &&
+          (confirmingReset ? (
+            <>
+              <span>Clear all progress and the edition choice?</span>
+              <button
+                type="button"
+                className="edition-pick"
+                disabled={saving}
+                onClick={handleReset}
+              >
+                Yes, clear
+              </button>
+              <button
+                type="button"
+                className="edition-pick"
+                disabled={saving}
+                onClick={() => setConfirmingReset(false)}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="edition-pick"
+              disabled={saving}
+              onClick={() => setConfirmingReset(true)}
+            >
+              Clear progress
+            </button>
+          ))}
       </form>
 
-      {!valid && pagesRead !== "" && (
-        <p className="error">
-          {needsEdition && !selectedEdition
-            ? editionsLoading
-              ? "Loading editions..."
-              : "Choose an edition first."
-            : totalPages && pagesNumber > totalPages
-              ? `This edition has ${totalPages} pages.`
-              : "Enter a whole number, 0 or more."}
-        </p>
-      )}
+      {validationError && <p className="error">{validationError}</p>}
       {message && <p className="progress-success">{message}</p>}
       {error && <p className="error">{error}</p>}
     </div>
