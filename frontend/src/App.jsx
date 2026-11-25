@@ -10,6 +10,7 @@ import BookReadingProgress from "./pages/book/BookReadingProgress.jsx";
 import { useEffect, useState } from "react";
 import { getCurrentUser, logout } from "./api/client.js";
 import CurrentlyReading from "./components/CurrentlyReading.jsx";
+import PersonalLibrary from "./components/PersonalLibrary.jsx";
 
 function App() {
   
@@ -82,6 +83,7 @@ function App() {
           <Route path="progress" element={<BookReadingProgress />} />
         </Route>
         <Route path="/stats" element={<ReadingStats />} />
+        <Route path="/library" element={<PersonalLibrary />} />
         <Route 
           path="/login" 
           element={<Login onLogin={setUser} />} 
