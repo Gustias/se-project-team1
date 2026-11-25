@@ -137,6 +137,9 @@ namespace BookClub.Api.Migrations
                     b.Property<string>("LastChapterRead")
                         .HasColumnType("text");
 
+                    b.Property<int>("PagesRead")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Progress")
                         .HasColumnType("integer");
 
