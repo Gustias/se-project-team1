@@ -2,6 +2,7 @@ using BookClub.Api.Data;
 using BookClub.Api.Models;
 using BookClub.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using BookClub.Api.Data.Repositories;
 
 namespace BookClub.Api.Tests;
 
@@ -12,6 +13,17 @@ public class BookRatingServiceTests
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
         return new AppDbContext(options);
+    }
+
+    private static BookRatingService CreateService(
+        AppDbContext context)
+    {
+        var repository =
+            new OwnedEntityRepository<BookRatingEntry>(context);
+
+        return new BookRatingService(
+            context,
+            repository);
     }
 
     private static void CreateMockBookEntry(AppDbContext context)
@@ -45,11 +57,28 @@ public class BookRatingServiceTests
         });
     }
 
+    private static void CreateOtherUserWithReadBook(AppDbContext context)
+    {
+        context.Users.Add(new User
+        {
+            Id = 2,
+            UserName = "OtherUser"
+        });
+
+        context.ReadingProgresses.Add(new ReadingProgress
+        {
+            Id = 10,
+            BookId = 1,
+            UserId = 2,
+            Status = ReadingStatus.Read
+        });
+    }
+
     [Fact]
     public async Task CreateAsync_WhenUserDoesNotExist_ReturnsNull()
     {
         using var context = CreateContext();
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
 
@@ -63,7 +92,7 @@ public class BookRatingServiceTests
         CreateMockUserEntry(context);
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
         Assert.Null(result);
@@ -78,7 +107,7 @@ public class BookRatingServiceTests
         CreateMockReadingProgressEntry(context, ReadingStatus.Reading);
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
         Assert.Null(result);
@@ -100,7 +129,7 @@ public class BookRatingServiceTests
         });
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
         Assert.Null(result);
@@ -115,7 +144,7 @@ public class BookRatingServiceTests
         CreateMockReadingProgressEntry(context, ReadingStatus.Read);
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
         Assert.NotNull(result);
@@ -131,7 +160,7 @@ public class BookRatingServiceTests
     {
         using var context = CreateContext();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.GetAsync(1, 1);
         Assert.Null(result);
@@ -150,7 +179,7 @@ public class BookRatingServiceTests
         });
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.GetAsync(1, 1);
         Assert.NotNull(result);
@@ -159,5 +188,90 @@ public class BookRatingServiceTests
         Assert.Equal(1, result.UserId);
     }
 
+    [Fact]
+    public async Task GetAsync_WhenEntryBelongsToAnotherUser_ReturnsNull()
+    {
+        using var context = CreateContext();
+
+        context.BookRatingEntries.Add(new BookRatingEntry
+        {
+            Id = 10,
+            BookId = 1,
+            UserId = 2,
+            Rating = new BookRating(5)
+        });
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.GetAsync(id: 10, userId: 1);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenOnlyAnotherUserHasReadBook_ReturnsNull()
+    {
+        using var context = CreateContext();
+
+        CreateMockUserEntry(context);
+        CreateMockBookEntry(context);
+        CreateOtherUserWithReadBook(context);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.CreateAsync(
+            userId: 1,
+            bookId: 1,
+            rating: 5);
+
+        Assert.Null(result);
+        Assert.Empty(context.BookRatingEntries);
+    }
+
+    [Fact]
+    public async Task CreateAsync_WhenAnotherUserHasRatedSameBook_ReturnsDto()
+    {
+        using var context = CreateContext();
+
+        CreateMockUserEntry(context);
+        CreateMockBookEntry(context);
+        CreateMockReadingProgressEntry(context, ReadingStatus.Read);
+        CreateOtherUserWithReadBook(context);
+
+        context.BookRatingEntries.Add(new BookRatingEntry
+        {
+            Id = 10,
+            BookId = 1,
+            UserId = 2,
+            Rating = new BookRating(5)
+        });
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.CreateAsync(
+            userId: 1,
+            bookId: 1,
+            rating: 4);
+
+        Assert.NotNull(result);
+        Assert.Equal(1, result.UserId);
+        Assert.Equal(1, result.BookId);
+        Assert.Equal(4, result.Rating);
+
+        Assert.Equal(2, await context.BookRatingEntries.CountAsync());
+
+        var otherRating = await context.BookRatingEntries
+            .AsNoTracking()
+            .SingleAsync(r => r.Id == 10);
+
+        Assert.Equal(2, otherRating.UserId);
+        Assert.Equal(5, otherRating.Rating.Value);
+    }
 
 }

@@ -7,7 +7,7 @@ public enum ReadingStatus
     WantToRead
 }
 
-public class ReadingProgress
+public class ReadingProgress : IUserOwnedEntity
 {
     public int Id { get; set; }
     public required int UserId { get; set; }
@@ -18,4 +18,7 @@ public class ReadingProgress
     public string? LastChapterRead { get; set; }
     public DateOnly? DateRead { get; set; }
     public ReadingStatus Status { get; set; }
+
+    public int? TotalPages { get; set; }
+    public int PagesRead { get; set; }
 }

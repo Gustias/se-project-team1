@@ -114,20 +114,20 @@ export async function createBook({
   author,
 }) {
   const csrfToken = await getCsrfToken();
-  
+
   const response = await fetch(`${BASE_URL}/api/books`, {
     method: "POST",
     credentials: "include",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
-      "X-CSRF-TOKEN": csrfToken, 
+      "X-CSRF-TOKEN": csrfToken,
     },
-    body: JSON.stringify({ 
-      externalId, 
-      isbn10, 
-      isbn13, 
-      title, 
-      author, 
+    body: JSON.stringify({
+      externalId,
+      isbn10,
+      isbn13,
+      title,
+      author,
     }),
   });
 
@@ -144,13 +144,15 @@ export async function createReadingProgress({
   progress,
   lastChapterRead,
   status,
+  totalPages,
+  pagesRead,
 }) {
   const csrfToken = await getCsrfToken();
-  
+
   const response = await fetch(`${BASE_URL}/api/reading-progress`, {
     method: "POST",
     credentials: "include",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "X-CSRF-TOKEN": csrfToken
      },
@@ -159,8 +161,21 @@ export async function createReadingProgress({
       progress,
       lastChapterRead: lastChapterRead ?? null,
       status,
+      totalPages: totalPages ?? null,
+      pagesRead: pagesRead ?? null,
     }),
   });
+  return handle(response);
+}
+
+// The current user's reading progress for a work, or null if there is none yet.
+export async function getReadingProgressByWork(externalId, signal) {
+  const response = await fetch(
+    `${BASE_URL}/api/reading-progress/by-work/${encodeURIComponent(toWorkId(externalId))}`,
+    { credentials: "include", signal },
+  );
+
+  if (response.status === 404) return null;
   return handle(response);
 }
 
@@ -174,20 +189,28 @@ export async function getReadingProgress(id) {
 
 export async function updateReadingProgress(
   id,
-  { progress, lastChapterRead, status }) {
+  {
+    progress,
+    lastChapterRead,
+    status,
+    totalPages,
+    pagesRead,
+  }) {
   const csrfToken = await getCsrfToken();
 
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "PUT",
     credentials: "include",
-    headers: { 
-      "Content-Type": "application/json", 
+    headers: {
+      "Content-Type": "application/json",
       "X-CSRF-TOKEN": csrfToken,
     },
     body: JSON.stringify({
       progress,
       lastChapterRead: lastChapterRead ?? null,
       status,
+      totalPages: totalPages ?? null,
+      pagesRead: pagesRead ?? null,
     }),
   });
 
@@ -214,7 +237,7 @@ export async function createBookRating({ bookId, rating }) {
   const response = await fetch(`${BASE_URL}/api/book-ratings`, {
     method: "POST",
     credentials: "include",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "X-CSRF-TOKEN": csrfToken,
     },
@@ -230,7 +253,17 @@ export async function getReadingSummary(from, to){
   {
     credentials: "include",
   });
-  
+
+  return handle(response);
+}
+
+export async function getRatingList(){
+  const response = await fetch(
+    `${BASE_URL}/api/book-ratings/list`,
+    {
+      credentials: "include",
+    });
+
   return handle(response);
 }
 

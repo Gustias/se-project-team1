@@ -3,6 +3,7 @@ using BookClub.Api.Models;
 using BookClub.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using BookClub.Api.Exceptions;
+using BookClub.Api.Data.Repositories;
 
 namespace BookClub.Api.Tests;
 
@@ -12,6 +13,17 @@ public class ReadingLogServiceTests
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
         return new AppDbContext(options);
+    }
+
+    private static ReadingLogService CreateService(
+        AppDbContext context)
+    {
+        var repository =
+            new OwnedEntityRepository<ReadingLog>(context);
+
+        return new ReadingLogService(
+            context,
+            repository);
     }
 
     private static void CreateMockBookEntry(AppDbContext context)
@@ -46,6 +58,19 @@ public class ReadingLogServiceTests
         });
     }
 
+    private static void AddOtherUserReadingLog(AppDbContext context)
+    {
+        context.ReadingLogs.Add(new ReadingLog
+        {
+            Id = 10,
+            BookId = 1,
+            UserId = 2,
+            StartPage = 10,
+            EndPage = 11,
+            Date = new DateOnly(2026, 11, 09)
+        });
+    }
+
     [Fact]
     public async Task CreateAsync_WhenUserDoesNotExist_ReturnsNull()
     {
@@ -53,7 +78,7 @@ public class ReadingLogServiceTests
         CreateMockBookEntry(context);
         context.SaveChanges();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026, 11, 09));
 
         Assert.Null(result);
@@ -66,7 +91,7 @@ public class ReadingLogServiceTests
         CreateMockUserEntry(context);
         context.SaveChanges();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
 
         await Assert.ThrowsAsync<BookNotFoundException>(() =>
             service.CreateAsync(
@@ -85,7 +110,7 @@ public class ReadingLogServiceTests
         CreateMockBookEntry(context);
         context.SaveChanges();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.CreateAsync(1, 1, 10, 11, new DateOnly(2026, 11, 09));
 
         Assert.Single(context.ReadingLogs);
@@ -100,7 +125,7 @@ public class ReadingLogServiceTests
     {
         using var context = CreateContext();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.GetAsync(1, 1);
 
         Assert.Null(result);
@@ -121,7 +146,7 @@ public class ReadingLogServiceTests
         });
         context.SaveChanges();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.GetAsync(1, 1);
 
         Assert.NotNull(result);
@@ -137,7 +162,7 @@ public class ReadingLogServiceTests
         var from = new DateOnly(2026, 11, 01);
         var to = new DateOnly(2026, 11, 30);
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.GetSummaryAsync(1, from, to);
 
         Assert.Equal(from, result.From);
@@ -155,7 +180,7 @@ public class ReadingLogServiceTests
         AddReadingLog(context, 1, 30, 35, date); // 5 pages
         context.SaveChanges();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.GetSummaryAsync(1, date, date);
 
         var day = Assert.Single(result.Days);
@@ -173,7 +198,7 @@ public class ReadingLogServiceTests
         AddReadingLog(context, 2, 0, 50, date); // other user
         context.SaveChanges();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.GetSummaryAsync(1, date, date);
 
         Assert.Equal(10, result.TotalPages);
@@ -185,7 +210,7 @@ public class ReadingLogServiceTests
     {
         using var context = CreateContext();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.DeleteAsync(1, 1);
 
         Assert.False(result);
@@ -206,10 +231,49 @@ public class ReadingLogServiceTests
         });
         context.SaveChanges();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
         var result = await service.DeleteAsync(1, 1);
 
         Assert.True(result);
         Assert.Empty(context.ReadingLogs);
+    }
+
+    [Fact]
+    public async Task GetAsync_WhenEntryBelongsToAnotherUser_ReturnsNull()
+    {
+        using var context = CreateContext();
+
+        AddOtherUserReadingLog(context);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.GetAsync(id: 10, userId: 1);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenEntryBelongsToAnotherUser_ReturnsFalse()
+    {
+        using var context = CreateContext();
+
+        AddOtherUserReadingLog(context);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.DeleteAsync(id: 10, userId: 1);
+
+        Assert.False(result);
+
+        var saved = await context.ReadingLogs
+            .AsNoTracking()
+            .SingleAsync();
+
+        Assert.Equal(10, saved.Id);
+        Assert.Equal(2, saved.UserId);
     }
 }

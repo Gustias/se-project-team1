@@ -3,6 +3,7 @@ using BookClub.Api.Models;
 using BookClub.Api.Services;
 using BookClub.Api.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using BookClub.Api.Data.Repositories;
 
 namespace BookClub.Api.Tests;
 
@@ -12,6 +13,17 @@ public class ReadingProgressServiceTests
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
         return new AppDbContext(options);
+    }
+
+    private static ReadingProgressService CreateService(
+        AppDbContext context)
+    {
+        var repository =
+            new OwnedEntityRepository<ReadingProgress>(context);
+
+        return new ReadingProgressService(
+            context,
+            repository);
     }
 
     private static void CreateMockBookEntry(AppDbContext context)
@@ -44,7 +56,7 @@ public class ReadingProgressServiceTests
     {
         using var context = CreateContext();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
 
         await Assert.ThrowsAsync<BookNotFoundException>(() =>
             service.CreateAsync(
@@ -70,7 +82,7 @@ public class ReadingProgressServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
 
         await Assert.ThrowsAsync<ReadingProgressAlreadyExistsException>(() =>
             service.CreateAsync(
@@ -91,7 +103,7 @@ public class ReadingProgressServiceTests
         AddReadingProgress(context, 1, 2, ReadingStatus.Reading); // other user
         context.SaveChanges();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
         var result = await service.CreateAsync(1, 1, 10, "Chapter 1", ReadingStatus.Reading);
 
         Assert.NotNull(result);
@@ -105,7 +117,7 @@ public class ReadingProgressServiceTests
         CreateMockBookEntry(context);
         context.SaveChanges();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
         var result = await service.CreateAsync(1, 1, 42, "Chapter 4", ReadingStatus.Reading);
 
         Assert.NotNull(result);
@@ -122,7 +134,7 @@ public class ReadingProgressServiceTests
     {
         using var context = CreateContext();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
         var result = await service.UpdateAsync(1, 1, 50, "Chapter 5", ReadingStatus.Read);
 
         Assert.Null(result);
@@ -135,7 +147,7 @@ public class ReadingProgressServiceTests
         AddReadingProgress(context, 1, 1, ReadingStatus.Reading);
         context.SaveChanges();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
         var result = await service.UpdateAsync(1, 1, 100, "Final chapter", ReadingStatus.Read);
 
         Assert.NotNull(result);
@@ -156,7 +168,7 @@ public class ReadingProgressServiceTests
     {
         using var context = CreateContext();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
         var result = await service.DeleteAsync(1, 1);
 
         Assert.False(result);
@@ -169,7 +181,7 @@ public class ReadingProgressServiceTests
         AddReadingProgress(context, 1, 1, ReadingStatus.Reading);
         context.SaveChanges();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
         var result = await service.DeleteAsync(1, 1);
 
         Assert.True(result);
@@ -181,7 +193,7 @@ public class ReadingProgressServiceTests
     {
         using var context = CreateContext();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
         var result = await service.GetAsync(1, 1);
 
         Assert.Null(result);
@@ -194,7 +206,7 @@ public class ReadingProgressServiceTests
         AddReadingProgress(context, 1, 1, ReadingStatus.Reading);
         context.SaveChanges();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
         var result = await service.GetAsync(1, 1);
 
         Assert.NotNull(result);
@@ -207,5 +219,73 @@ public class ReadingProgressServiceTests
         Assert.Equal(ReadingStatus.Reading, result.Status);
     }
 
+    [Fact]
+    public async Task GetAsync_WhenEntryBelongsToAnotherUser_ReturnsNull()
+    {
+        using var context = CreateContext();
 
+        AddReadingProgress(context, 10, 2, ReadingStatus.Reading);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.GetAsync(id: 10, userId: 1);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenEntryBelongsToAnotherUser_ReturnsNull()
+    {
+        using var context = CreateContext();
+
+        AddReadingProgress(context, 10, 2, ReadingStatus.Reading);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.UpdateAsync(
+            id: 10,
+            userId: 1,
+            progress: 100,
+            lastChapterRead: "Final chapter",
+            status: ReadingStatus.Read);
+
+        Assert.Null(result);
+
+        var saved = await context.ReadingProgresses
+            .AsNoTracking()
+            .SingleAsync();
+
+        Assert.Equal(10, saved.Id);
+        Assert.Equal(2, saved.UserId);
+        Assert.Equal(67, saved.Progress);
+        Assert.Equal("Chapter 1", saved.LastChapterRead);
+        Assert.Equal(ReadingStatus.Reading, saved.Status);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenEntryBelongsToAnotherUser_ReturnsFalse()
+    {
+        using var context = CreateContext();
+
+        AddReadingProgress(context, 10, 2, ReadingStatus.Reading);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.DeleteAsync(id: 10, userId: 1);
+
+        Assert.False(result);
+
+        var saved = await context.ReadingProgresses
+            .AsNoTracking()
+            .SingleAsync();
+
+        Assert.Equal(10, saved.Id);
+        Assert.Equal(2, saved.UserId);
+    }
 }

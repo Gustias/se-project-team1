@@ -26,13 +26,21 @@ public class AuthApiTests : IClassFixture<ApiFactory>
         string url, object? body = null, bool withCsrf = true)
     {
         using var request = new HttpRequestMessage(HttpMethod.Post, url);
-        if (body is not null) request.Content = JsonContent.Create(body);
+
+        if (body is not null)
+        {
+            request.Content = JsonContent.Create(body);
+        }
 
         if (withCsrf)
         {
             // fetched fresh every time: the token changes after login/logout
-            var csrf = await _client.GetFromJsonAsync<CsrfToken>("/api/auth/csrf");
-            request.Headers.Add("X-CSRF-TOKEN", csrf!.Token);
+            var csrf = await _client.GetFromJsonAsync<CsrfToken>(
+                "/api/auth/csrf");
+
+            request.Headers.Add(
+                "X-CSRF-TOKEN",
+                csrf!.Token);
         }
 
         return await _client.SendAsync(request);
@@ -41,26 +49,59 @@ public class AuthApiTests : IClassFixture<ApiFactory>
     private async Task<string> RegisterAsync()
     {
         var email = NewEmail();
-        using var response = await PostAsync("/api/auth/register",
-            new { userName = email, email, password = Password });
+
+        using var response = await PostAsync(
+            "/api/auth/register",
+            new
+            {
+                userName = email,
+                email,
+                password = Password
+            });
+
         Assert.True(response.IsSuccessStatusCode);
+
         return email;
     }
 
     private static async Task AssertDuplicateRegistrationErrorAsync(
         HttpResponseMessage response)
     {
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
 
         var error = await response.Content
             .ReadFromJsonAsync<RegistrationError>();
 
         Assert.NotNull(error);
-        Assert.Equal("Registration failed.", error.Message);
+        Assert.Equal(
+            "Registration failed.",
+            error.Message);
+
         Assert.Single(error.Errors);
+
         Assert.Contains(
             "Registration could not be completed.",
             error.Errors);
+    }
+
+    private static async Task AssertValidationErrorAsync(
+        HttpResponseMessage response,
+        string expectedField)
+    {
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
+
+        var problem = await response.Content
+            .ReadFromJsonAsync<ValidationProblemDetails>();
+
+        Assert.NotNull(problem);
+
+        Assert.Contains(
+            expectedField,
+            problem.Errors.Keys);
     }
 
     [Fact]
@@ -68,18 +109,38 @@ public class AuthApiTests : IClassFixture<ApiFactory>
     {
         var email = await RegisterAsync();
 
-        using var login = await PostAsync("/api/auth/login", new { email, password = Password });
+        using var login = await PostAsync(
+            "/api/auth/login",
+            new
+            {
+                email,
+                password = Password
+            });
+
         Assert.True(login.IsSuccessStatusCode);
 
-        using var me = await _client.GetAsync("/api/auth/me");
-        Assert.Equal(HttpStatusCode.OK, me.StatusCode);
-        Assert.Contains(email, await me.Content.ReadAsStringAsync());
+        using var me = await _client.GetAsync(
+            "/api/auth/me");
 
-        using var logout = await PostAsync("/api/auth/logout");
+        Assert.Equal(
+            HttpStatusCode.OK,
+            me.StatusCode);
+
+        Assert.Contains(
+            email,
+            await me.Content.ReadAsStringAsync());
+
+        using var logout = await PostAsync(
+            "/api/auth/logout");
+
         Assert.True(logout.IsSuccessStatusCode);
 
-        using var meAfter = await _client.GetAsync("/api/auth/me");
-        Assert.Equal(HttpStatusCode.Unauthorized, meAfter.StatusCode);
+        using var meAfter = await _client.GetAsync(
+            "/api/auth/me");
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            meAfter.StatusCode);
     }
 
     [Fact]
@@ -87,15 +148,33 @@ public class AuthApiTests : IClassFixture<ApiFactory>
     {
         var email = await RegisterAsync();
 
-        using var wrongPassword = await PostAsync("/api/auth/login",
-            new { email, password = "Wrong-Passw0rd!" });
-        using var unknownEmail = await PostAsync("/api/auth/login",
-            new { email = NewEmail(), password = Password });
+        using var wrongPassword = await PostAsync(
+            "/api/auth/login",
+            new
+            {
+                email,
+                password = "Wrong-Passw0rd!"
+            });
 
-        Assert.Equal(HttpStatusCode.Unauthorized, wrongPassword.StatusCode);
-        Assert.Equal(wrongPassword.StatusCode, unknownEmail.StatusCode);
-        Assert.Equal(await wrongPassword.Content.ReadAsStringAsync(),
-                     await unknownEmail.Content.ReadAsStringAsync());
+        using var unknownEmail = await PostAsync(
+            "/api/auth/login",
+            new
+            {
+                email = NewEmail(),
+                password = Password
+            });
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            wrongPassword.StatusCode);
+
+        Assert.Equal(
+            wrongPassword.StatusCode,
+            unknownEmail.StatusCode);
+
+        Assert.Equal(
+            await wrongPassword.Content.ReadAsStringAsync(),
+            await unknownEmail.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -105,11 +184,23 @@ public class AuthApiTests : IClassFixture<ApiFactory>
 
         for (var i = 0; i < 10; i++)
         {
-            using var attempt = await PostAsync("/api/auth/login",
-                new { email, password = "Wrong-Passw0rd!" });
+            using var attempt = await PostAsync(
+                "/api/auth/login",
+                new
+                {
+                    email,
+                    password = "Wrong-Passw0rd!"
+                });
         }
 
-        using var locked = await PostAsync("/api/auth/login", new { email, password = Password });
+        using var locked = await PostAsync(
+            "/api/auth/login",
+            new
+            {
+                email,
+                password = Password
+            });
+
         Assert.False(locked.IsSuccessStatusCode);
     }
 
@@ -117,22 +208,41 @@ public class AuthApiTests : IClassFixture<ApiFactory>
     public async Task Post_WithoutCsrfToken_IsRejected_ButWorksWithOne()
     {
         var email = NewEmail();
-        var body = new { userName = email, email, password = Password };
 
-        using var rejected = await PostAsync("/api/auth/register", body, withCsrf: false);
-        Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+        var body = new
+        {
+            userName = email,
+            email,
+            password = Password
+        };
+
+        using var rejected = await PostAsync(
+            "/api/auth/register",
+            body,
+            withCsrf: false);
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            rejected.StatusCode);
 
         // control case: the exact same request succeeds with a token,
         // so the 400 above really was about CSRF
-        using var accepted = await PostAsync("/api/auth/register", body);
+        using var accepted = await PostAsync(
+            "/api/auth/register",
+            body);
+
         Assert.True(accepted.IsSuccessStatusCode);
     }
 
     [Fact]
     public async Task Me_WhenNotLoggedIn_Returns401()
     {
-        using var response = await _client.GetAsync("/api/auth/me");
-        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        using var response = await _client.GetAsync(
+            "/api/auth/me");
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            response.StatusCode);
     }
 
     [Fact]
@@ -147,13 +257,18 @@ public class AuthApiTests : IClassFixture<ApiFactory>
                 password = Password
             });
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
 
         var problem = await response.Content
             .ReadFromJsonAsync<ValidationProblemDetails>();
 
         Assert.NotNull(problem);
-        Assert.Contains("Email", problem.Errors.Keys);
+
+        Assert.Contains(
+            "Email",
+            problem.Errors.Keys);
     }
 
     [Theory]
@@ -162,7 +277,8 @@ public class AuthApiTests : IClassFixture<ApiFactory>
     [InlineData("test1234", "uppercase")]
     [InlineData("TEST1234", "lowercase")]
     public async Task Register_WhenPasswordIsWeak_Returns400(
-        string password, string expectedError)
+        string password,
+        string expectedError)
     {
         var email = NewEmail();
 
@@ -171,18 +287,26 @@ public class AuthApiTests : IClassFixture<ApiFactory>
             new
             {
                 userName = email,
-                email = email,
-                password = password
+                email,
+                password
             });
 
-        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            response.StatusCode);
 
         var error = await response.Content
             .ReadFromJsonAsync<RegistrationError>();
 
         Assert.NotNull(error);
-        Assert.Equal("Registration failed.", error.Message);
-        Assert.Contains(error.Errors, e => e.Contains(expectedError));
+
+        Assert.Equal(
+            "Registration failed.",
+            error.Message);
+
+        Assert.Contains(
+            error.Errors,
+            e => e.Contains(expectedError));
     }
 
     [Fact]
@@ -195,11 +319,12 @@ public class AuthApiTests : IClassFixture<ApiFactory>
             new
             {
                 userName = $"TestUser{Guid.NewGuid():N}",
-                email = email,
+                email,
                 password = Password
             });
 
-        await AssertDuplicateRegistrationErrorAsync(response);
+        await AssertDuplicateRegistrationErrorAsync(
+            response);
     }
 
     [Fact]
@@ -211,11 +336,132 @@ public class AuthApiTests : IClassFixture<ApiFactory>
             "/api/auth/register",
             new
             {
-                userName = userName,
+                userName,
                 email = NewEmail(),
                 password = Password
             });
 
-        await AssertDuplicateRegistrationErrorAsync(response);
+        await AssertDuplicateRegistrationErrorAsync(
+            response);
+    }
+
+    [Fact]
+    public async Task Login_WhenEmailIsEmpty_Returns400()
+    {
+        using var response = await PostAsync(
+            "/api/auth/login",
+            new
+            {
+                email = "",
+                password = Password
+            });
+
+        await AssertValidationErrorAsync(
+            response,
+            "Email");
+    }
+
+    [Fact]
+    public async Task Login_WhenEmailIsInvalid_Returns400()
+    {
+        using var response = await PostAsync(
+            "/api/auth/login",
+            new
+            {
+                email = "invalid-email",
+                password = Password
+            });
+
+        await AssertValidationErrorAsync(
+            response,
+            "Email");
+    }
+
+    [Fact]
+    public async Task Login_WhenPasswordIsEmpty_Returns400()
+    {
+        using var response = await PostAsync(
+            "/api/auth/login",
+            new
+            {
+                email = NewEmail(),
+                password = ""
+            });
+
+        await AssertValidationErrorAsync(
+            response,
+            "Password");
+    }
+
+    [Fact]
+    public async Task Logout_WhenNotLoggedIn_Returns401()
+    {
+        using var response = await PostAsync(
+            "/api/auth/logout");
+
+        Assert.Equal(
+            HttpStatusCode.Unauthorized,
+            response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_WithoutCsrfToken_Returns400()
+    {
+        var email = await RegisterAsync();
+
+        var body = new
+        {
+            email,
+            password = Password
+        };
+
+        using var rejected = await PostAsync(
+            "/api/auth/login",
+            body,
+            withCsrf: false);
+
+        Assert.Equal(
+            HttpStatusCode.BadRequest,
+            rejected.StatusCode);
+
+        using var accepted = await PostAsync(
+            "/api/auth/login",
+            body);
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            accepted.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_SessionPersistsAcrossRequests()
+    {
+        var email = await RegisterAsync();
+
+        using var login = await PostAsync(
+            "/api/auth/login",
+            new
+            {
+                email,
+                password = Password
+            });
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            login.StatusCode);
+
+        for (var i = 0; i < 3; i++)
+        {
+            using var response = await _client.GetAsync(
+                "/api/auth/me");
+
+            Assert.Equal(
+                HttpStatusCode.OK,
+                response.StatusCode);
+
+            Assert.Contains(
+                email,
+                await response.Content.ReadAsStringAsync());
+        }
     }
 }
