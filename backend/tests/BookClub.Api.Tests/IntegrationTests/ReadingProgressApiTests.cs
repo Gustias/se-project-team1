@@ -118,6 +118,36 @@ public class ReadingProgressApiTests : IClassFixture<ApiFactory>
     }
 
     [Fact]
+    public async Task Delete_RemovesEntryButKeepsBook()
+    {
+        var userId = await _api.RegisterAndLoginAsync();
+        var bookId = await _api.CreateBookAsync();
+        var id = await _api.CreateProgressAsync(
+            userId,
+            bookId,
+            Reading);
+
+        using var deleted = await _api.DeleteAsync(
+            $"/api/reading-progress/{id}");
+
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        using var progressResponse = await _api.Http.GetAsync(
+            $"/api/reading-progress/{id}");
+
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            progressResponse.StatusCode);
+
+        using var bookResponse = await _api.Http.GetAsync(
+            $"/api/books/{bookId}");
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            bookResponse.StatusCode);
+    }
+
+    [Fact]
     public async Task GetLibrary_ReturnsEntriesWithDifferentStatuses()
     {
         var userId = await _api.RegisterAndLoginAsync();
