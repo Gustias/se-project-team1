@@ -3,16 +3,21 @@ using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using Microsoft.EntityFrameworkCore;
 using BookClub.Api.Exceptions;
+using BookClub.Api.Data.Repositories;
 
 namespace BookClub.Api.Services;
 
 public class ReadingLogService
 {
     private readonly AppDbContext _dbContext;
+    private readonly OwnedEntityRepository<ReadingLog> _ownedEntityRepository;
 
-    public ReadingLogService(AppDbContext dbContext)
+    public ReadingLogService(
+        AppDbContext dbContext,
+        OwnedEntityRepository<ReadingLog> ownedEntityRepository)
     {
         _dbContext = dbContext;
+        _ownedEntityRepository = ownedEntityRepository;
     }
 
     public async Task<ReadingLogDto?> CreateAsync(
@@ -29,7 +34,7 @@ public class ReadingLogService
         {
             throw new BookNotFoundException(bookId);
         }
-        
+
         var user = await _dbContext.Users.FindAsync(userId);
         if (user is null) return null;
 
@@ -48,18 +53,15 @@ public class ReadingLogService
         return ToDto(entry);
     }
 
-    public async Task<ReadingLogDto?> GetAsync(int id, int userId)
+    public async Task<ReadingLogDto?> GetAsync(
+        int id,
+        int userId)
     {
-        var existing = await _dbContext.ReadingLogs
-            .FirstOrDefaultAsync(rl =>
-                rl.Id == id && rl.UserId == userId);
-
-        if (existing is null)
-        {
-            return null;
-        }
-
-        return ToDto(existing);
+        return await _ownedEntityRepository
+            .GetMappedAsync(
+                id,
+                userId,
+                ToDto);
     }
 
     public async Task<ReadingSummaryDto> GetSummaryAsync(int userId, DateOnly from, DateOnly to)
@@ -74,30 +76,28 @@ public class ReadingLogService
             })
             .OrderBy(d => d.Date)
             .ToListAsync();
+        var totalBooksRead = await _dbContext.ReadingLogs
+            .Where(l => l.UserId == userId && l.Date >= from && l.Date <= to)
+            .Select(l => l.BookId)
+            .Distinct()
+            .CountAsync();
         return new ReadingSummaryDto
         {
             From = from,
             To = to,
             TotalPages = days.Sum(d => d.PagesRead),
+            TotalBooksRead = totalBooksRead,
             Days = days
         };
     }
 
-    public async Task<bool> DeleteAsync(int id, int userId)
+    public async Task<bool> DeleteAsync(
+        int id,
+        int userId)
     {
-        var existing = await _dbContext.ReadingLogs.
-            FirstOrDefaultAsync(rl =>
-                rl.Id == id && rl.UserId == userId);
-
-        if (existing is null)
-        {
-            return false;
-        }
-
-        _dbContext.ReadingLogs.Remove(existing);
-        await _dbContext.SaveChangesAsync();
-
-        return true;
+        return await _ownedEntityRepository.DeleteAsync(
+            id,
+            userId);
     }
 
     private static ReadingLogDto ToDto(ReadingLog entry)

@@ -114,20 +114,20 @@ export async function createBook({
   author,
 }) {
   const csrfToken = await getCsrfToken();
-  
+
   const response = await fetch(`${BASE_URL}/api/books`, {
     method: "POST",
     credentials: "include",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
-      "X-CSRF-TOKEN": csrfToken, 
+      "X-CSRF-TOKEN": csrfToken,
     },
-    body: JSON.stringify({ 
-      externalId, 
-      isbn10, 
-      isbn13, 
-      title, 
-      author, 
+    body: JSON.stringify({
+      externalId,
+      isbn10,
+      isbn13,
+      title,
+      author,
     }),
   });
 
@@ -148,11 +148,11 @@ export async function createReadingProgress({
   pagesRead,
 }) {
   const csrfToken = await getCsrfToken();
-  
+
   const response = await fetch(`${BASE_URL}/api/reading-progress`, {
     method: "POST",
     credentials: "include",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "X-CSRF-TOKEN": csrfToken
      },
@@ -201,8 +201,8 @@ export async function updateReadingProgress(
   const response = await fetch(`${BASE_URL}/api/reading-progress/${id}`, {
     method: "PUT",
     credentials: "include",
-    headers: { 
-      "Content-Type": "application/json", 
+    headers: {
+      "Content-Type": "application/json",
       "X-CSRF-TOKEN": csrfToken,
     },
     body: JSON.stringify({
@@ -237,7 +237,7 @@ export async function createBookRating({ bookId, rating }) {
   const response = await fetch(`${BASE_URL}/api/book-ratings`, {
     method: "POST",
     credentials: "include",
-    headers: { 
+    headers: {
       "Content-Type": "application/json",
       "X-CSRF-TOKEN": csrfToken,
     },
@@ -253,7 +253,17 @@ export async function getReadingSummary(from, to){
   {
     credentials: "include",
   });
-  
+
+  return handle(response);
+}
+
+export async function getRatingList(){
+  const response = await fetch(
+    `${BASE_URL}/api/book-ratings/list`,
+    {
+      credentials: "include",
+    });
+
   return handle(response);
 }
 

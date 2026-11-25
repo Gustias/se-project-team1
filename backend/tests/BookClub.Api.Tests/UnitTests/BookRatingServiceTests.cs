@@ -2,6 +2,7 @@ using BookClub.Api.Data;
 using BookClub.Api.Models;
 using BookClub.Api.Services;
 using Microsoft.EntityFrameworkCore;
+using BookClub.Api.Data.Repositories;
 
 namespace BookClub.Api.Tests;
 
@@ -12,6 +13,17 @@ public class BookRatingServiceTests
     {
         var options = new DbContextOptionsBuilder<AppDbContext>().UseInMemoryDatabase(Guid.NewGuid().ToString()).Options;
         return new AppDbContext(options);
+    }
+
+    private static BookRatingService CreateService(
+        AppDbContext context)
+    {
+        var repository =
+            new OwnedEntityRepository<BookRatingEntry>(context);
+
+        return new BookRatingService(
+            context,
+            repository);
     }
 
     private static void CreateMockBookEntry(AppDbContext context)
@@ -49,7 +61,7 @@ public class BookRatingServiceTests
     public async Task CreateAsync_WhenUserDoesNotExist_ReturnsNull()
     {
         using var context = CreateContext();
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
 
@@ -63,7 +75,7 @@ public class BookRatingServiceTests
         CreateMockUserEntry(context);
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
         Assert.Null(result);
@@ -78,7 +90,7 @@ public class BookRatingServiceTests
         CreateMockReadingProgressEntry(context, ReadingStatus.Reading);
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
         Assert.Null(result);
@@ -100,7 +112,7 @@ public class BookRatingServiceTests
         });
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
         Assert.Null(result);
@@ -115,7 +127,7 @@ public class BookRatingServiceTests
         CreateMockReadingProgressEntry(context, ReadingStatus.Read);
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(1, 1, 5);
         Assert.NotNull(result);
@@ -131,7 +143,7 @@ public class BookRatingServiceTests
     {
         using var context = CreateContext();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.GetAsync(1, 1);
         Assert.Null(result);
@@ -150,7 +162,7 @@ public class BookRatingServiceTests
         });
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.GetAsync(1, 1);
         Assert.NotNull(result);

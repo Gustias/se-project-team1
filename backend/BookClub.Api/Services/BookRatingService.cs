@@ -2,16 +2,20 @@ using BookClub.Api.Data;
 using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using Microsoft.EntityFrameworkCore;
-using Npgsql.Internal;
 namespace BookClub.Api.Services;
+using BookClub.Api.Data.Repositories;
 
 public class BookRatingService
 {
     private readonly AppDbContext _dbContext;
+    private readonly OwnedEntityRepository<BookRatingEntry> _ownedEntityRepository;
 
-    public BookRatingService(AppDbContext dbContext)
+    public BookRatingService(
+        AppDbContext dbContext,
+        OwnedEntityRepository<BookRatingEntry> ownedEntityRepository)
     {
         _dbContext = dbContext;
+        _ownedEntityRepository = ownedEntityRepository;
     }
 
     public async Task<BookRatingDto?> CreateAsync(
@@ -72,18 +76,15 @@ public class BookRatingService
         return ToDto(entry);
     }
 
-    public async Task<BookRatingDto?> GetAsync(int id, int userId)
+    public async Task<BookRatingDto?> GetAsync(
+        int id,
+        int userId)
     {
-        var entry = await _dbContext.BookRatingEntries
-            .FirstOrDefaultAsync(r =>
-                r.Id == id && r.UserId == userId);
-
-        if (entry is null)
-        {
-            return null;
-        }
-
-        return ToDto(entry);
+        return await _ownedEntityRepository
+            .GetMappedAsync(
+                id,
+                userId,
+                ToDto);
     }
 
     private static BookRatingDto ToDto(BookRatingEntry entry)
@@ -96,4 +97,24 @@ public class BookRatingService
             Rating = entry.Rating.Value
         };
     }
+
+    public async Task<List<BookRatingListItemDto>> GetListAsync(int userId)
+    {
+        var query = _dbContext.BookRatingEntries
+            .Where(e => e.UserId == userId)
+            .Include(e => e.Book);
+
+        var entries = await query.OrderByDescending(e => e.Rating).ThenBy(e => e.Book.Title).ToListAsync();// highest first
+
+        return entries
+            .Select(e => new BookRatingListItemDto
+            {
+                BookId = e.BookId,
+                Title = e.Book.Title,
+                Author = e.Book.Author,
+                Rating = e.Rating.Value
+            })
+            .ToList();
+    }
+
 }
