@@ -96,4 +96,24 @@ public class BookRatingService
             Rating = entry.Rating.Value
         };
     }
+
+    public async Task<List<BookRatingListItemDto>> GetListAsync(int userId)
+    {
+        var query = _dbContext.BookRatingEntries
+            .Where(e => e.UserId == userId)
+            .Include(e => e.Book);
+
+        var entries = await query.OrderByDescending(e => e.Rating).ThenBy(e => e.Book.Title).ToListAsync();// highest first
+
+        return entries
+            .Select(e => new BookRatingListItemDto
+            {
+                BookId = e.BookId,
+                Title = e.Book.Title,
+                Author = e.Book.Author,
+                Rating = e.Rating.Value
+            })
+            .ToList();
+    }
+
 }
