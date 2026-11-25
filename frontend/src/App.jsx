@@ -87,7 +87,7 @@ function App() {
           element={<Login onLogin={setUser} />} 
         />
         <Route path="/register" element={<Register />} />
-        <Route path="/reading" element={<CurrentlyReading />} />+
+        <Route path="/reading" element={<CurrentlyReading />} />
       </Routes>
 
     </main>
