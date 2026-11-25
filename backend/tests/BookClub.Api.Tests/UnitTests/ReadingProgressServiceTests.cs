@@ -219,5 +219,73 @@ public class ReadingProgressServiceTests
         Assert.Equal(ReadingStatus.Reading, result.Status);
     }
 
+    [Fact]
+    public async Task GetAsync_WhenEntryBelongsToAnotherUser_ReturnsNull()
+    {
+        using var context = CreateContext();
 
+        AddReadingProgress(context, 10, 2, ReadingStatus.Reading);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.GetAsync(id: 10, userId: 1);
+
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenEntryBelongsToAnotherUser_ReturnsNull()
+    {
+        using var context = CreateContext();
+
+        AddReadingProgress(context, 10, 2, ReadingStatus.Reading);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.UpdateAsync(
+            id: 10,
+            userId: 1,
+            progress: 100,
+            lastChapterRead: "Final chapter",
+            status: ReadingStatus.Read);
+
+        Assert.Null(result);
+
+        var saved = await context.ReadingProgresses
+            .AsNoTracking()
+            .SingleAsync();
+
+        Assert.Equal(10, saved.Id);
+        Assert.Equal(2, saved.UserId);
+        Assert.Equal(67, saved.Progress);
+        Assert.Equal("Chapter 1", saved.LastChapterRead);
+        Assert.Equal(ReadingStatus.Reading, saved.Status);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_WhenEntryBelongsToAnotherUser_ReturnsFalse()
+    {
+        using var context = CreateContext();
+
+        AddReadingProgress(context, 10, 2, ReadingStatus.Reading);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        var result = await service.DeleteAsync(id: 10, userId: 1);
+
+        Assert.False(result);
+
+        var saved = await context.ReadingProgresses
+            .AsNoTracking()
+            .SingleAsync();
+
+        Assert.Equal(10, saved.Id);
+        Assert.Equal(2, saved.UserId);
+    }
 }
