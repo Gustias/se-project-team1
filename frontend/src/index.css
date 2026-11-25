@@ -544,3 +544,24 @@ body {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+.remove-library-btn {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border: 1px solid #b94a48;
+  border-radius: 6px;
+  background: transparent;
+  color: #b94a48;
+  font: inherit;
+  cursor: pointer;
+}
+
+.remove-library-btn:hover:not(:disabled) {
+  background: #b94a48;
+  color: white;
+}
+
+.remove-library-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

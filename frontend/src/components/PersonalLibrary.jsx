@@ -3,7 +3,13 @@ import { Link, useLocation } from "react-router-dom";
 import { client } from "../api/index.js";
 import { ReadingStatus } from "../constants/readingStatus.js";
 
-function LibraryRow({ item, updating, onStatusChange }) {
+function LibraryRow({
+  item,
+  updating,
+  removing,
+  onStatusChange,
+  onRemove,
+}) {
   const [imgFailed, setImgFailed] = useState(false);
 
   const coverUrl = item.isbn13
@@ -41,7 +47,7 @@ function LibraryRow({ item, updating, onStatusChange }) {
           Reading status:
           <select
             value={item.status}
-            disabled={updating}
+            disabled={updating || removing}
             onChange={(event) =>
               onStatusChange(item, Number(event.target.value))
             }
@@ -49,14 +55,25 @@ function LibraryRow({ item, updating, onStatusChange }) {
             <option value={ReadingStatus.WantToRead}>
               Want to read
             </option>
+
             <option value={ReadingStatus.Reading}>
               Currently reading
             </option>
+
             <option value={ReadingStatus.Read}>
               Read
             </option>
           </select>
         </label>
+
+        <button
+          type="button"
+          className="remove-library-btn"
+          disabled={removing || updating}
+          onClick={() => onRemove(item)}
+        >
+          {removing ? "Removing..." : "Remove from library"}
+        </button>
 
         <Link
           className="view-editions-btn"
@@ -76,7 +93,9 @@ function PersonalLibrary() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [updatingId, setUpdatingId] = useState(null);
+  const [removingId, setRemovingId] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -125,7 +144,10 @@ function PersonalLibrary() {
     setItems((currentItems) =>
       currentItems.map((currentItem) =>
         currentItem.id === item.id
-          ? { ...currentItem, status: newStatus }
+          ? {
+              ...currentItem,
+              status: newStatus,
+            }
           : currentItem,
       ),
     );
@@ -142,7 +164,10 @@ function PersonalLibrary() {
       setItems((currentItems) =>
         currentItems.map((currentItem) =>
           currentItem.id === item.id
-            ? { ...currentItem, status: previousStatus }
+            ? {
+                ...currentItem,
+                status: previousStatus,
+              }
             : currentItem,
         ),
       );
@@ -152,6 +177,35 @@ function PersonalLibrary() {
       );
     } finally {
       setUpdatingId(null);
+    }
+  }
+
+  async function handleRemove(item) {
+    const confirmed = window.confirm(
+      `Remove "${item.title}" from your library?`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setRemovingId(item.id);
+    setError("");
+
+    try {
+      await client.deleteReadingProgress(item.id);
+
+      setItems((currentItems) =>
+        currentItems.filter(
+          (currentItem) => currentItem.id !== item.id,
+        ),
+      );
+    } catch (err) {
+      setError(
+        err.message || "Could not remove book from library.",
+      );
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -184,13 +238,18 @@ function PersonalLibrary() {
       <h2>My Library</h2>
 
       {error && (
-        <p className="error">{error}</p>
+        <p className="error">
+          {error}
+        </p>
       )}
 
       {!error && items.length === 0 && (
         <p>
           Your library is empty.{" "}
-          <Link to="/">Find a book</Link> to get started.
+          <Link to="/">
+            Find a book
+          </Link>{" "}
+          to get started.
         </p>
       )}
 
@@ -198,7 +257,9 @@ function PersonalLibrary() {
         <>
           <p className="meta">
             {items.length}{" "}
-            {items.length === 1 ? "book" : "books"}
+            {items.length === 1
+              ? "book"
+              : "books"}
           </p>
 
           <ul className="editions">
@@ -206,8 +267,16 @@ function PersonalLibrary() {
               <LibraryRow
                 key={item.id}
                 item={item}
-                updating={updatingId === item.id}
-                onStatusChange={handleStatusChange}
+                updating={
+                  updatingId === item.id
+                }
+                removing={
+                  removingId === item.id
+                }
+                onStatusChange={
+                  handleStatusChange
+                }
+                onRemove={handleRemove}
               />
             ))}
           </ul>
