@@ -36,6 +36,7 @@ public class ReadingProgressController : ControllerBase
             request.Progress,
             request.LastChapterRead,
             request.Status,
+            request.TotalPages,
             request.PagesRead);
 
         return CreatedAtAction(
@@ -62,6 +63,7 @@ public class ReadingProgressController : ControllerBase
             request.Progress,
             request.LastChapterRead,
             request.Status,
+            request.TotalPages,
             request.PagesRead);
 
         if (updated is null)

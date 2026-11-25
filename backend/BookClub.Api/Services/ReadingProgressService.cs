@@ -21,6 +21,7 @@ public class ReadingProgressService
         int progress,
         string? lastChapterRead,
         ReadingStatus status,
+        int? totalPages = null,
         int? pagesRead = null)
     {
         var book = await _dbContext.Books.FindAsync(bookId);
@@ -48,6 +49,7 @@ public class ReadingProgressService
             LastChapterRead = lastChapterRead,
             DateRead = DateOnly.FromDateTime(DateTime.UtcNow),
             Status = status,
+            TotalPages = totalPages,
             PagesRead = pagesRead ?? 0
         };
 
@@ -63,6 +65,7 @@ public class ReadingProgressService
         int progress,
         String? lastChapterRead,
         ReadingStatus status,
+        int? totalPages = null,
         int? pagesRead = null)
     {
         var existing = await _dbContext.ReadingProgresses
@@ -79,6 +82,11 @@ public class ReadingProgressService
         existing.Progress = progress;
         existing.LastChapterRead = lastChapterRead;
         existing.Status = status;
+
+        if (totalPages is not null)
+        {
+            existing.TotalPages = totalPages.Value;
+        } 
 
         // Omitted pagesRead keeps the stored value.
         if (pagesRead is not null)
@@ -151,6 +159,7 @@ public class ReadingProgressService
             LastChapterRead = entry.LastChapterRead,
             DateRead = entry.DateRead,
             Status = entry.Status,
+            TotalPages = entry.TotalPages,
             PagesRead = entry.PagesRead
         };
     }

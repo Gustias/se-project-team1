@@ -144,6 +144,7 @@ export async function createReadingProgress({
   progress,
   lastChapterRead,
   status,
+  totalPages,
   pagesRead,
 }) {
   const csrfToken = await getCsrfToken();
@@ -160,6 +161,7 @@ export async function createReadingProgress({
       progress,
       lastChapterRead: lastChapterRead ?? null,
       status,
+      totalPages: totalPages ?? null,
       pagesRead: pagesRead ?? null,
     }),
   });
@@ -191,6 +193,7 @@ export async function updateReadingProgress(
     progress,
     lastChapterRead,
     status,
+    totalPages,
     pagesRead,
   }) {
   const csrfToken = await getCsrfToken();
@@ -206,6 +209,7 @@ export async function updateReadingProgress(
       progress,
       lastChapterRead: lastChapterRead ?? null,
       status,
+      totalPages: totalPages ?? null,
       pagesRead: pagesRead ?? null,
     }),
   });

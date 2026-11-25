@@ -19,5 +19,6 @@ public class ReadingProgress
     public DateOnly? DateRead { get; set; }
     public ReadingStatus Status { get; set; }
 
+    public int? TotalPages { get; set; }
     public int PagesRead { get; set; }
 }

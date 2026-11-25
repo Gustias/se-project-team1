@@ -12,6 +12,9 @@ public class UpdateReadingProgressDto
     [EnumDataType(typeof(ReadingStatus))]
     public ReadingStatus Status { get; set; }
 
+    [Range(1, 100000)]
+    public int? TotalPages { get; set; }
+
     [Range(0, 100000)]
     public int? PagesRead { get; set; }
 }
