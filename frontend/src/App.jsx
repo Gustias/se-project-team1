@@ -54,6 +54,7 @@ function App() {
         </NavLink>
         <nav>
           <NavLink to="/" end>Search</NavLink>
+          {user && <NavLink to="/library">Library</NavLink>}
           {user && <NavLink to="/reading">Reading</NavLink>}
           <NavLink to="/stats">Stats</NavLink>
 
