@@ -203,7 +203,7 @@ public class BookRatingServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.GetAsync(id: 10, userId: 1);
 
@@ -221,7 +221,7 @@ public class BookRatingServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(
             userId: 1,
@@ -252,7 +252,7 @@ public class BookRatingServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new BookRatingService(context);
+        var service = CreateService(context);
 
         var result = await service.CreateAsync(
             userId: 1,

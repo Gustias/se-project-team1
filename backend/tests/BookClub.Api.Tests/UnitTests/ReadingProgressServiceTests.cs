@@ -228,7 +228,7 @@ public class ReadingProgressServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
 
         var result = await service.GetAsync(id: 10, userId: 1);
 
@@ -244,7 +244,7 @@ public class ReadingProgressServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
 
         var result = await service.UpdateAsync(
             id: 10,
@@ -275,7 +275,7 @@ public class ReadingProgressServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new ReadingProgressService(context);
+        var service = CreateService(context);
 
         var result = await service.DeleteAsync(id: 10, userId: 1);
 

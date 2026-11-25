@@ -247,7 +247,7 @@ public class ReadingLogServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
 
         var result = await service.GetAsync(id: 10, userId: 1);
 
@@ -263,7 +263,7 @@ public class ReadingLogServiceTests
 
         await context.SaveChangesAsync();
 
-        var service = new ReadingLogService(context);
+        var service = CreateService(context);
 
         var result = await service.DeleteAsync(id: 10, userId: 1);
 
