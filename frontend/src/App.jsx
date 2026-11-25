@@ -9,6 +9,7 @@ import BookEditions from "./pages/book/BookEditions.jsx";
 import BookReadingProgress from "./pages/book/BookReadingProgress.jsx";
 import { useEffect, useState } from "react";
 import { getCurrentUser, logout } from "./api/client.js";
+import CurrentlyReading from "./components/CurrentlyReading.jsx";
 
 function App() {
   
@@ -52,6 +53,7 @@ function App() {
         </NavLink>
         <nav>
           <NavLink to="/" end>Search</NavLink>
+          {user && <NavLink to="/reading">Reading</NavLink>}
           <NavLink to="/stats">Stats</NavLink>
 
           {!loadingUser && (
@@ -85,6 +87,7 @@ function App() {
           element={<Login onLogin={setUser} />} 
         />
         <Route path="/register" element={<Register />} />
+        <Route path="/reading" element={<CurrentlyReading />} />
       </Routes>
 
     </main>

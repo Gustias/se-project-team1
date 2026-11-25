@@ -1,5 +1,6 @@
 using BookClub.Api.DTOs;
 using BookClub.Api.Services;
+using BookClub.Api.Models;
 using BookClub.Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
@@ -140,4 +141,19 @@ public class ReadingProgressController : ControllerBase
 
         return Ok(entry);
     }
+
+  [HttpGet]
+  public async Task<IActionResult> GetEntries([FromQuery] ReadingStatus status = ReadingStatus.Reading)
+  {
+      var currentUserId = User.GetUserId();
+
+      if (currentUserId is null)
+      {
+          return Unauthorized();
+      }
+
+      var entries = await _readingProgressService.GetByStatusAsync(currentUserId.Value, status);
+
+    return Ok(entries);
+}
 }

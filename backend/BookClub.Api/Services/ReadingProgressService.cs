@@ -151,4 +151,28 @@ public class ReadingProgressService
             PagesRead = entry.PagesRead
         };
     }
+
+    public async Task<List<ReadingListItemDto>> GetByStatusAsync(
+    int userId,
+    ReadingStatus status)
+    {
+        return await _dbContext.ReadingProgresses
+          .Where(rp => rp.UserId == userId && rp.Status == status)
+          .OrderByDescending(rp => rp.Id) // most recently added first
+          .Select(rp => new ReadingListItemDto
+          {
+              Id = rp.Id,
+              BookId = rp.BookId,
+              ExternalId = rp.Book.ExternalId,
+              Title = rp.Book.Title,
+              Author = rp.Book.Author,
+              Isbn13 = rp.Book.Isbn13,
+              Status = rp.Status,
+              Progress = rp.Progress,
+              PagesRead = rp.PagesRead,
+              TotalPages = rp.TotalPages,
+              LastChapterRead = rp.LastChapterRead
+          })
+          .ToListAsync();
+  }
 }
