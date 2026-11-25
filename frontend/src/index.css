@@ -377,20 +377,30 @@ body {
 }
 
 .view-editions-btn {
-  display: inline-flex;
+  display: inline-flex !important;
   align-items: center;
   justify-content: center;
-  width: 160px;
-  height: 42px;
-  box-sizing: border-box;
+
+  width: auto;
+  min-width: unset;
+  height: 32px;
+
+  padding: 0 12px;
   margin-top: 8px;
+
+  box-sizing: border-box;
   border: 1px solid #365e52;
   border-radius: 8px;
+
   background: white;
   color: #29483f;
-  font-size: 14px;
+
+  font-size: 13px;
   font-weight: 600;
+  line-height: 1;
+
   text-decoration: none;
+  white-space: nowrap;
 }
 
 .view-editions-btn:hover {
@@ -506,4 +516,5 @@ body {
 .centered-card {
     grid-column: 1 / -1;
     justify-self: center;
+}
 }
