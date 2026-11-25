@@ -77,6 +77,7 @@ function BookReadingProgress() {
   const [pagesRead, setPagesRead] = useState("0");
   const [lastChapter, setLastChapter] = useState("");
   const [saving, setSaving] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -96,6 +97,7 @@ function BookReadingProgress() {
     setEditionId("");
     setEditionsLoading(false);
     setLoadingMore(false);
+    setConfirmingReset(false);
     setLastChapter("");
 
     (async () => {
@@ -226,7 +228,7 @@ function BookReadingProgress() {
     setError("");
 
     const completed = hasTotal && pagesNumber >= totalPages;
-    const status = nextStatus(entry, { completed, hasTotal });
+    const status = nextStatus(entry, completed);
 
     const progress = hasTotal
       ? Math.min(100, Math.round((pagesNumber / totalPages) * 100))
@@ -300,6 +302,30 @@ function BookReadingProgress() {
     }
   }
 
+  // Deletes the entry. With no entry, the edition picker comes back on its own.
+  async function handleReset() {
+    if (!entry) return;
+
+    setSaving(true);
+    setMessage("");
+    setError("");
+
+    try {
+      await client.deleteReadingProgress(entry.id);
+
+      setEntry(null);
+      setEditionId("");
+      setPagesRead("0");
+      setLastChapter("");
+      setConfirmingReset(false);
+      setMessage("Progress cleared.");
+    } catch (err) {
+      setError(err.message || "Could not clear progress.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   // Editing a field makes any earlier "saved" message out of date.
   function handlePagesChange(event) {
     setPagesRead(event.target.value);
@@ -310,21 +336,6 @@ function BookReadingProgress() {
     setLastChapter(event.target.value);
     setMessage("");
   }
-
-  function nextStatus(entry, { completed, hasTotal }) {
-  if (completed) return ReadingStatus.Read;
-
-  if (entry?.status === ReadingStatus.Read) {
-    // Without a known total we can't tell whether the pages
-    // still count as finished, so leave the status alone.
-    return hasTotal ? ReadingStatus.Reading : ReadingStatus.Read;
-  }
-
-  if (!entry || entry.status === ReadingStatus.WantToRead) {
-    return ReadingStatus.Reading;
-  }
-  return entry.status;
-}
 
   return (
     <div className="book-section">
@@ -426,6 +437,38 @@ function BookReadingProgress() {
             Mark as finished
           </button>
         )}
+
+        {entry &&
+          (confirmingReset ? (
+            <>
+              <span>Clear all progress and the edition choice?</span>
+              <button
+                type="button"
+                className="edition-pick"
+                disabled={saving}
+                onClick={handleReset}
+              >
+                Yes, clear
+              </button>
+              <button
+                type="button"
+                className="edition-pick"
+                disabled={saving}
+                onClick={() => setConfirmingReset(false)}
+              >
+                Cancel
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="edition-pick"
+              disabled={saving}
+              onClick={() => setConfirmingReset(true)}
+            >
+              Clear progress
+            </button>
+          ))}
       </form>
 
       {validationError && <p className="error">{validationError}</p>}
