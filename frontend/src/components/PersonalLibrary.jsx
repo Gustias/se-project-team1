@@ -3,20 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { client } from "../api/index.js";
 import { ReadingStatus } from "../constants/readingStatus.js";
 
-function getStatusLabel(status) {
-  switch (status) {
-    case ReadingStatus.Reading:
-      return "Currently reading";
-    case ReadingStatus.Read:
-      return "Read";
-    case ReadingStatus.WantToRead:
-      return "Want to read";
-    default:
-      return "Unknown";
-  }
-}
-
-function LibraryRow({ item }) {
+function LibraryRow({ item, updating, onStatusChange }) {
   const [imgFailed, setImgFailed] = useState(false);
 
   const coverUrl = item.isbn13
@@ -50,9 +37,26 @@ function LibraryRow({ item }) {
           {item.author || "Unknown author"}
         </p>
 
-        <p className="meta">
-          Status: {getStatusLabel(item.status)}
-        </p>
+        <label className="library-status">
+          Reading status:
+          <select
+            value={item.status}
+            disabled={updating}
+            onChange={(event) =>
+              onStatusChange(item, Number(event.target.value))
+            }
+          >
+            <option value={ReadingStatus.WantToRead}>
+              Want to read
+            </option>
+            <option value={ReadingStatus.Reading}>
+              Currently reading
+            </option>
+            <option value={ReadingStatus.Read}>
+              Read
+            </option>
+          </select>
+        </label>
 
         <Link
           className="view-editions-btn"
@@ -72,6 +76,7 @@ function PersonalLibrary() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -110,6 +115,45 @@ function PersonalLibrary() {
 
     return () => controller.abort();
   }, []);
+
+  async function handleStatusChange(item, newStatus) {
+    const previousStatus = item.status;
+
+    setUpdatingId(item.id);
+    setError("");
+
+    setItems((currentItems) =>
+      currentItems.map((currentItem) =>
+        currentItem.id === item.id
+          ? { ...currentItem, status: newStatus }
+          : currentItem,
+      ),
+    );
+
+    try {
+      await client.updateReadingProgress(item.id, {
+        progress: item.progress,
+        lastChapterRead: item.lastChapterRead,
+        status: newStatus,
+        totalPages: item.totalPages,
+        pagesRead: item.pagesRead,
+      });
+    } catch (err) {
+      setItems((currentItems) =>
+        currentItems.map((currentItem) =>
+          currentItem.id === item.id
+            ? { ...currentItem, status: previousStatus }
+            : currentItem,
+        ),
+      );
+
+      setError(
+        err.message || "Could not update reading status.",
+      );
+    } finally {
+      setUpdatingId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -162,6 +206,8 @@ function PersonalLibrary() {
               <LibraryRow
                 key={item.id}
                 item={item}
+                updating={updatingId === item.id}
+                onStatusChange={handleStatusChange}
               />
             ))}
           </ul>

@@ -518,3 +518,29 @@ body {
     grid-column: 1 / -1;
     justify-self: center;
 }
+
+.library-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.library-status select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #365e52;
+  border-radius: 6px;
+  background: white;
+  color: #222;
+  font: inherit;
+  cursor: pointer;
+}
+
+.library-status select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
