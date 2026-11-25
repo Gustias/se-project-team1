@@ -76,6 +76,7 @@ function BookReadingProgress() {
   const [editionId, setEditionId] = useState("");
   const [pagesRead, setPagesRead] = useState("0");
   const [lastChapter, setLastChapter] = useState("");
+  const [customTotal, setCustomTotal] = useState("");
   const [saving, setSaving] = useState(false);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [message, setMessage] = useState("");
@@ -98,6 +99,7 @@ function BookReadingProgress() {
     setEditionsLoading(false);
     setLoadingMore(false);
     setConfirmingReset(false);
+    setCustomTotal("");
     setLastChapter("");
 
     (async () => {
@@ -191,8 +193,18 @@ function BookReadingProgress() {
   const showPicker = wantsEditions && (editionsLoading || editions.length > 0);
   // Only a brand-new entry must pick one; old entries can still update without it.
   const needsEdition = !entry && (editionsLoading || editions.length > 0);
-  // Chosen edition on first save, then the total stored on the entry.
-  const totalPages = selectedEdition?.pageCount ?? entry?.totalPages ?? null;
+  // The chosen edition has no page count, so the user can type the total.
+  const needsCustomTotal =
+    wantsEditions && Boolean(selectedEdition) && !(selectedEdition.pageCount > 0);
+  const customTotalNumber = Number(customTotal);
+  const customTotalValid =
+    Number.isInteger(customTotalNumber) && customTotalNumber > 0;
+  // Typed total, else the chosen edition's count, else the total stored on the entry.
+  const totalPages = needsCustomTotal
+    ? customTotalValid
+      ? customTotalNumber
+      : null
+    : selectedEdition?.pageCount || entry?.totalPages || null;
   const hasTotal = totalPages > 0;
 
   // One place decides what is wrong, so the message always matches the check.
@@ -201,6 +213,8 @@ function BookReadingProgress() {
     validationError = editionsLoading
       ? "Loading editions..."
       : "Choose an edition first.";
+  } else if (needsCustomTotal && customTotal !== "" && !customTotalValid) {
+    validationError = "Enter the total pages as a whole number above 0.";
   } else if (pagesRead === "" || !Number.isInteger(pagesNumber) || pagesNumber < 0) {
     validationError = "Enter a whole number, 0 or more.";
   } else if (hasTotal && pagesNumber > totalPages) {
@@ -302,6 +316,13 @@ function BookReadingProgress() {
     }
   }
 
+  // A typed total belongs to one edition, so picking another clears it.
+  function handleSelectEdition(id) {
+    if (id !== editionId) setCustomTotal("");
+    setEditionId(id);
+    setMessage("");
+  }
+
   // Deletes the entry. With no entry, the edition picker comes back on its own.
   async function handleReset() {
     if (!entry) return;
@@ -315,6 +336,7 @@ function BookReadingProgress() {
 
       setEntry(null);
       setEditionId("");
+      setCustomTotal("");
       setPagesRead("0");
       setLastChapter("");
       setConfirmingReset(false);
@@ -382,7 +404,7 @@ function BookReadingProgress() {
                 key={edition.externalId}
                 edition={edition}
                 selected={selectedEdition?.externalId === edition.externalId}
-                onSelect={setEditionId}
+                onSelect={handleSelectEdition}
               />
             ))}
           </ul>
@@ -398,6 +420,22 @@ function BookReadingProgress() {
       )}
 
       <form className="progress-form" onSubmit={handleSave}>
+        {needsCustomTotal && (
+          <label>
+            Total pages (this edition has no page count, optional)
+            <input
+              type="number"
+              min="1"
+              step="1"
+              placeholder="e.g. 320"
+              value={customTotal}
+              onChange={(e) => {
+                setCustomTotal(e.target.value);
+                setMessage("");
+              }}
+            />
+          </label>
+        )}
         <label>
           {hasTotal ? `Pages read (of ${totalPages})` : "Pages read"}
           <input
