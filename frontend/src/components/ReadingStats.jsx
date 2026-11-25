@@ -1,5 +1,5 @@
 import {useEffect, useState} from "react";
-import {getReadingSummary} from "../api/client.js";
+import {getRatingList, getReadingSummary} from "../api/client.js";
 import {Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis} from "recharts";
 
 function fillMonths(days, from, to) {
@@ -78,16 +78,56 @@ function getRange(key) {
   return { from: "2000-01-01", to: toIso(today) };
 }
 
+function getHighestRatedBookTitle(ratingList) {
+  if (!ratingList || ratingList.length === 0) {
+    return "No ratings yet";
+  }
 
+  let highest = ratingList[0];
+
+  for (const book of ratingList) {
+    if (book.rating > highest.rating) {
+      highest = book;
+    }
+  }
+
+  return highest.title;
+}
+
+function getLowestRatedBookTitle(ratingList) {
+  if (!ratingList || ratingList.length === 0) {
+    return "No ratings yet";
+  }
+
+  let highest = ratingList[0];
+
+  for (const book of ratingList) {
+    if (book.rating < highest.rating) {
+      highest = book;
+    }
+  }
+
+  return highest.title;
+}
 
 export default function ReadingStats() {
   const [range, setRange] = useState("month"); // month, year, all
   const [days, setDays] = useState([]);
+  const [totalBooksRead, setTotalBooksRead] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [ratingList, setRatingList] = useState([]);
 
   useEffect(() => {
+    setLoading(true);
     const { from, to } = getRange(range);
+    getRatingList()
+      .then((data) => {
+        setRatingList(data)
+      })
+      .catch((err) => console.log(err))
     getReadingSummary(from, to)
       .then((data) => {
+        setTotalBooksRead(data.totalBooksRead);
         if (range === "month") {
           setDays(fillDays(data.days, from, to));
         } else if (data.days.length === 0) {
@@ -99,25 +139,75 @@ export default function ReadingStats() {
           setDays(fillMonths(data.days, data.days[0].date, to));
         }
       })
-      .catch((err) => console.log(err));
+      .catch((err) => console.log(err))
+      .finally(() => setLoading(false));
   }, [range]);
+
+    const entriesCount = days.filter(d => d.pagesRead > 0).length; // aggregated entries, not actual ones
+    let totalPagesRead = 0;
+    for (const day of days) {
+      totalPagesRead = totalPagesRead + day.pagesRead;
+    }
+    const averagePagesPerDay = (totalPagesRead / entriesCount).toFixed(0);
+    const lowestRatedBook = getLowestRatedBookTitle(ratingList);
+    const highestRatedBook = getHighestRatedBookTitle(ratingList);
+
   return (
     <>
-      <h1>Stats for pages read</h1>
-      <div>
-        <BarChart width={1000} height={400} data={days}>
-          <Bar dataKey="pagesRead" fill="#303030" />
-          <XAxis dataKey="date" interval={range === "month" ? 0 : "preserveStartEnd"} tickFormatter={(d) => (range === "month" ? Number(d.slice(8)) : d)} />
-          <YAxis dataKey="pagesRead" allowDecimals={false}/>
-          <Tooltip />
-          <CartesianGrid stroke="#484848  " />
-        </BarChart>
-      </div>
-      <div>
-        <button onClick={() => setRange("month")}>Last 30 days</button>
-        <button onClick={() => setRange("year")}>Last 1 year</button>
-        <button onClick={() => setRange("all")}>All</button>
-      </div>
+      <h1>Reading stats</h1>
+
+      {loading ? (
+        <p>Loading...</p>
+      ) : entriesCount > 0 ?
+        (
+        <>
+        <div>
+          <div className="stats-grid">
+            <h4 className="stats-card">Days read: {entriesCount}</h4>
+            <h4 className="stats-card">Unique books: {totalBooksRead}</h4>
+            <h4 className="stats-card">Pages read: {totalPagesRead}</h4>
+            <h4 className="stats-card">Average pages per day: {averagePagesPerDay}</h4>
+            {ratingList.length === 1 ? (
+              <h4 className={`stats-card ${ratingList.length === 1 ? "centered-card" : ""}`}>
+                Only rated book: {ratingList[0].title} ({ratingList[0].rating})
+              </h4>
+            ) : ratingList.length > 1 ? (
+              <>
+                <h4 className="stats-card">
+                  Highest rated book: {getHighestRatedBookTitle(ratingList)}
+                </h4>
+                <h4 className="stats-card">
+                  Lowest rated book: {getLowestRatedBookTitle(ratingList)}
+                </h4>
+              </>
+            ) : (
+              <h4 className="stats-card">No ratings yet</h4>
+            )}
+          </div>
+          <br></br>
+          <BarChart width={1000} height={400} data={days}>
+            <Bar name="Pages" dataKey="pagesRead" fill="#303030" />
+            <XAxis
+              dataKey="date"
+              interval={range === "month" ? 0 : "preserveStartEnd"}
+              tickFormatter={(d) => (range === "month" ? Number(d.slice(8)) : d)}
+            />
+            <YAxis dataKey="pagesRead" allowDecimals={false} />
+            <Tooltip />
+            <CartesianGrid stroke="#484848" />
+          </BarChart>
+        </div>
+          <div>
+            <button onClick={() => setRange("month")}>Last 30 days</button>
+            <button onClick={() => setRange("year")}>Last 1 year</button>
+            <button onClick={() => setRange("all")}>All</button>
+          </div>
+        </>
+      ) : (
+        <div>
+          <h4>No entries found.</h4>
+        </div>
+      )}
     </>
   );
 }

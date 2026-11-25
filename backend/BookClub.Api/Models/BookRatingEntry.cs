@@ -1,6 +1,6 @@
 namespace BookClub.Api.Models;
 
-public class BookRatingEntry
+public class BookRatingEntry : IUserOwnedEntity
 {
     public int Id { get; set; }
 

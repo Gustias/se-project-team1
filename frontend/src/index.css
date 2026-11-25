@@ -487,4 +487,23 @@ body {
 
 .progress-success {
   color: #29483f;
+
+.stats-grid {
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.stats-card {
+    margin: 0;
+    background: #e0e0e0;
+    color: black;
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.centered-card {
+    grid-column: 1 / -1;
+    justify-self: center;
 }
