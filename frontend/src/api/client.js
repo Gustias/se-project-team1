@@ -289,3 +289,12 @@ export async function getWorkEditions(
 
   return { total: data.total, editions: data.items };
 }
+
+export async function getReadingList(status, signal) {
+  const response = await fetch(
+    `${BASE_URL}/api/reading-progress?status=${status}`,
+    { credentials: "include", signal },
+  );
+
+  return handle(response);
+}
