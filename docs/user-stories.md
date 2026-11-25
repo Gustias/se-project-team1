@@ -98,7 +98,7 @@ As a user, I want to view my personal library so that I can see the books I have
 - Books from both Want to Read and Read categories can be identified.
 - An appropriate message is displayed when the library is empty.
 
-**Status:** In Progress
+**Status:** Implemented
 
 ---
 
@@ -114,7 +114,7 @@ As a user, I want to remove a book from my Want to Read list so that I can keep 
 - The removed book no longer appears in the personal library.
 - Removing one book does not affect other saved books.
 
-**Status:** In Progress
+**Status:** Implemented
 
 ---
 
@@ -131,7 +131,7 @@ As a user, I want to mark a book as read so that I can keep a record of books I 
 - The updated reading status is displayed to the user.
 - The updated status remains available after the application is refreshed.
 
-**Status:** In Progress
+**Status:** Implemented
 
 ---
 
