@@ -82,6 +82,8 @@ public class ReadingProgressService
             return null;
         }
 
+        var previousPagesRead = existing.PagesRead;
+
         existing.Progress = progress;
         existing.LastChapterRead = lastChapterRead;
         existing.Status = status;
@@ -89,12 +91,25 @@ public class ReadingProgressService
         if (totalPages is not null)
         {
             existing.TotalPages = totalPages.Value;
-        } 
+        }
 
-        // Omitted pagesRead keeps the stored value.
         if (pagesRead is not null)
         {
-            existing.PagesRead = pagesRead.Value;
+            var newPagesRead = pagesRead.Value;
+
+            if (newPagesRead > previousPagesRead)
+            {
+                _dbContext.ReadingLogs.Add(new ReadingLog
+                {
+                    UserId = userId,
+                    BookId = existing.BookId,
+                    StartPage = previousPagesRead,
+                    EndPage = newPagesRead,
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow)
+                });
+            }
+
+            existing.PagesRead = newPagesRead;
         }
 
         await _dbContext.SaveChangesAsync();

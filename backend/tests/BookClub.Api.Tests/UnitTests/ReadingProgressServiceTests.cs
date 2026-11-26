@@ -37,7 +37,12 @@ public class ReadingProgressServiceTests
         });
     }
 
-    private static void AddReadingProgress(AppDbContext context, int id, int userId, ReadingStatus status)
+    private static void AddReadingProgress(
+        AppDbContext context,
+        int id,
+        int userId,
+        ReadingStatus status,
+        int pagesRead = 0)
     {
         context.ReadingProgresses.Add(new ReadingProgress
         {
@@ -47,8 +52,74 @@ public class ReadingProgressServiceTests
             Progress = 67,
             LastChapterRead = "Chapter 1",
             DateRead = new DateOnly(2026, 11, 09),
-            Status = status
+            Status = status,
+            PagesRead = pagesRead
         });
+    }
+
+    [Fact]
+    public async Task UpdateAsync_WhenPagesIncrease_CreatesReadingLog()
+    {
+        using var context = CreateContext();
+
+        AddReadingProgress(
+            context,
+            1,
+            1,
+            ReadingStatus.Reading,
+            pagesRead: 50);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        await service.UpdateAsync(
+            1,
+            1,
+            38,
+            "Chapter 5",
+            ReadingStatus.Reading,
+            totalPages: 200,
+            pagesRead: 75);
+
+        var log = Assert.Single(context.ReadingLogs);
+
+        Assert.Equal(1, log.UserId);
+        Assert.Equal(1, log.BookId);
+        Assert.Equal(50, log.StartPage);
+        Assert.Equal(75, log.EndPage);
+        Assert.Equal(25, log.EndPage - log.StartPage);
+    }
+
+    [Theory]
+    [InlineData(50)]
+    [InlineData(40)]
+    public async Task UpdateAsync_WhenPagesDoNotIncrease_DoesNotCreateReadingLog(
+        int newPagesRead)
+    {
+        using var context = CreateContext();
+
+        AddReadingProgress(
+            context,
+            1,
+            1,
+            ReadingStatus.Reading,
+            pagesRead: 50);
+
+        await context.SaveChangesAsync();
+
+        var service = CreateService(context);
+
+        await service.UpdateAsync(
+            1,
+            1,
+            25,
+            "Chapter 4",
+            ReadingStatus.Reading,
+            totalPages: 200,
+            pagesRead: newPagesRead);
+
+        Assert.Empty(context.ReadingLogs);
     }
 
     [Fact]
