@@ -1,8 +1,8 @@
 using BookClub.Api.DTOs;
-using BookClub.Api.Services;
 using BookClub.Api.Extensions;
-using Microsoft.AspNetCore.Mvc;
+using BookClub.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BookClub.Api.Controllers;
 
@@ -20,12 +20,14 @@ public class ReadingLogController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateEntry(CreateReadingLogDto request)
+    public async Task<IActionResult> CreateEntry(
+        CreateReadingLogDto request,
+        CancellationToken cancellationToken)
     {
-
         if (request.StartPage > request.EndPage)
         {
-            return BadRequest("EndPage must be greater than or equal to StartPage");
+            return BadRequest(
+                "EndPage must be greater than or equal to StartPage");
         }
 
         var currentUserId = User.GetUserId();
@@ -35,24 +37,31 @@ public class ReadingLogController : ControllerBase
             return Unauthorized();
         }
 
-        var entry = await _readingLogService.CreateAsync(
-            currentUserId.Value,
-            request.BookId,
-            request.StartPage,
-            request.EndPage,
-            request.Date
-            );
+        var entry =
+            await _readingLogService.CreateAsync(
+                currentUserId.Value,
+                request.BookId,
+                request.StartPage,
+                request.EndPage,
+                request.Date,
+                cancellationToken);
 
         if (entry is null)
         {
-            return BadRequest("Could not create a reading log.");
+            return BadRequest(
+                "Could not create a reading log.");
         }
 
-        return CreatedAtAction(nameof(GetEntryById), new { id = entry.Id }, entry);
+        return CreatedAtAction(
+            nameof(GetEntryById),
+            new { id = entry.Id },
+            entry);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetEntryById(int id)
+    public async Task<IActionResult> GetEntryById(
+        int id,
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -61,7 +70,11 @@ public class ReadingLogController : ControllerBase
             return Unauthorized();
         }
 
-        var log = await _readingLogService.GetAsync(id, currentUserId.Value);
+        var log =
+            await _readingLogService.GetAsync(
+                id,
+                currentUserId.Value,
+                cancellationToken);
 
         if (log is null)
         {
@@ -72,12 +85,15 @@ public class ReadingLogController : ControllerBase
     }
 
     [HttpGet("summary")]
-    public async Task<IActionResult> GetSummary(DateOnly from, DateOnly to)
+    public async Task<IActionResult> GetSummary(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken)
     {
-
         if (to < from)
         {
-            return BadRequest("'to' date must be on or after 'from' date.");
+            return BadRequest(
+                "'to' date must be on or after 'from' date.");
         }
 
         var currentUserId = User.GetUserId();
@@ -87,12 +103,20 @@ public class ReadingLogController : ControllerBase
             return Unauthorized();
         }
 
-        return Ok(await _readingLogService.GetSummaryAsync(currentUserId.Value, from, to));
+        var summary =
+            await _readingLogService.GetSummaryAsync(
+                currentUserId.Value,
+                from,
+                to,
+                cancellationToken);
+
+        return Ok(summary);
     }
 
-
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteEntry(int id)
+    public async Task<IActionResult> DeleteEntry(
+        int id,
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -101,7 +125,11 @@ public class ReadingLogController : ControllerBase
             return Unauthorized();
         }
 
-        var deleted = await _readingLogService.DeleteAsync(id, currentUserId.Value);
+        var deleted =
+            await _readingLogService.DeleteAsync(
+                id,
+                currentUserId.Value,
+                cancellationToken);
 
         if (!deleted)
         {
@@ -110,5 +138,4 @@ public class ReadingLogController : ControllerBase
 
         return NoContent();
     }
-
 }

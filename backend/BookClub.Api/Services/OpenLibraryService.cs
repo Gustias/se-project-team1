@@ -27,41 +27,59 @@ public class OpenLibraryService
 
         return await _cache.GetOrCreateAsync(
             normalizedQuery,
-            () => FetchBooksFromOpenLibraryAsync(normalizedQuery, limit),
+            () => FetchBooksFromOpenLibraryAsync(
+                normalizedQuery,
+                limit,
+                cancellationToken),
             cancellationToken);
     }
 
     private async Task<List<BookSearchResultDto>> FetchBooksFromOpenLibraryAsync(
         string normalizedQuery,
-        int limit)
+        int limit,
+        CancellationToken cancellationToken = default)
     {
-        var isIsbn = TryNormalizeIsbn(normalizedQuery, out var isbnQuery);
+        var isIsbn = TryNormalizeIsbn(
+            normalizedQuery,
+            out var isbnQuery);
 
         string searchQuery;
+
         if (isIsbn)
         {
             searchQuery = $"isbn:{isbnQuery}";
-        } 
+        }
         else
         {
-            var escapedQuery = EscapeSearchQuery(normalizedQuery);
-            searchQuery = $"title:{escapedQuery} OR author:{escapedQuery}";
+            var escapedQuery =
+                EscapeSearchQuery(normalizedQuery);
+
+            searchQuery =
+                $"title:{escapedQuery} OR author:{escapedQuery}";
         }
 
-        var encodedQuery = Uri.EscapeDataString(searchQuery);
-        var url = $"search.json?q={encodedQuery}&limit={limit}" +
+        var encodedQuery =
+            Uri.EscapeDataString(searchQuery);
+
+        var url =
+            $"search.json?q={encodedQuery}&limit={limit}" +
             "&fields=key,title,author_name,cover_i,first_publish_year,isbn,publisher";
 
-        using var response = await _httpClient.GetAsync(url);
+        using var response =
+            await _httpClient.GetAsync(
+                url,
+                cancellationToken);
 
         response.EnsureSuccessStatusCode();
 
         await using var stream =
-            await response.Content.ReadAsStreamAsync();
+            await response.Content.ReadAsStreamAsync(
+                cancellationToken);
 
         var openLibraryResponse =
             await JsonSerializer.DeserializeAsync<OpenLibrarySearchResponse>(
-                stream);
+                stream,
+                cancellationToken: cancellationToken);
 
         if (openLibraryResponse?.Docs == null)
         {
@@ -69,23 +87,29 @@ public class OpenLibraryService
         }
 
         var docs = openLibraryResponse.Docs
-            .Where(book => !string.IsNullOrWhiteSpace(book.Title));
+            .Where(book =>
+                !string.IsNullOrWhiteSpace(book.Title));
 
-        // Only apply the text filter for title/author searches
         if (!isIsbn)
         {
             docs = docs.Where(book =>
-            book.Title!.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase)
-            ||
-            (book.AuthorName?.Any(author =>
-                author.Contains(normalizedQuery, StringComparison.OrdinalIgnoreCase)) ?? false));
+                book.Title!.Contains(
+                    normalizedQuery,
+                    StringComparison.OrdinalIgnoreCase)
+                ||
+                (book.AuthorName?.Any(author =>
+                    author.Contains(
+                        normalizedQuery,
+                        StringComparison.OrdinalIgnoreCase))
+                ?? false));
         }
 
         return docs
             .Take(30)
             .Select(book =>
             {
-                var (isbn10, isbn13) = PickIsbns(book.Isbn);
+                var (isbn10, isbn13) =
+                    PickIsbns(book.Isbn);
 
                 return new BookSearchResultDto
                 {
@@ -100,8 +124,10 @@ public class OpenLibraryService
                     Year = book.FirstPublishYear,
                     Isbn10 = isbn10,
                     Isbn13 = isbn13,
-                    Publishers = (book.Publishers ?? new List<string>())
-                        .Distinct(StringComparer.OrdinalIgnoreCase)
+                    Publishers =
+                        (book.Publishers ?? new List<string>())
+                        .Distinct(
+                            StringComparer.OrdinalIgnoreCase)
                         .Take(10)
                         .ToList()
                 };

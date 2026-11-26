@@ -25,18 +25,28 @@ public class ReadingLogService
         int bookId,
         int startPage,
         int endPage,
-        DateOnly date
-        )
+        DateOnly date,
+        CancellationToken cancellationToken = default)
     {
+        var book = await _dbContext.Books
+            .FirstOrDefaultAsync(
+                b => b.Id == bookId,
+                cancellationToken);
 
-        var book = await _dbContext.Books.FindAsync(bookId);
         if (book is null)
         {
             throw new BookNotFoundException(bookId);
         }
 
-        var user = await _dbContext.Users.FindAsync(userId);
-        if (user is null) return null;
+        var user = await _dbContext.Users
+            .FirstOrDefaultAsync(
+                u => u.Id == userId,
+                cancellationToken);
+
+        if (user is null)
+        {
+            return null;
+        }
 
         var entry = new ReadingLog
         {
@@ -48,44 +58,63 @@ public class ReadingLogService
         };
 
         _dbContext.ReadingLogs.Add(entry);
-        await _dbContext.SaveChangesAsync();
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
 
         return ToDto(entry);
     }
 
     public async Task<ReadingLogDto?> GetAsync(
         int id,
-        int userId)
+        int userId,
+        CancellationToken cancellationToken = default)
     {
         return await _ownedEntityRepository
             .GetMappedAsync(
                 id,
                 userId,
-                ToDto);
+                ToDto,
+                cancellationToken);
     }
 
-    public async Task<ReadingSummaryDto> GetSummaryAsync(int userId, DateOnly from, DateOnly to)
+    public async Task<ReadingSummaryDto> GetSummaryAsync(
+        int userId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken = default)
     {
         var days = await _dbContext.ReadingLogs
-            .Where(l => l.UserId == userId && l.Date >= from && l.Date <= to)
+            .Where(l =>
+                l.UserId == userId &&
+                l.Date >= from &&
+                l.Date <= to)
             .GroupBy(l => l.Date)
             .Select(g => new DailyReadingDto
             {
                 Date = g.Key,
-                PagesRead = g.Sum(l => l.EndPage - l.StartPage)
+                PagesRead =
+                    g.Sum(l => l.EndPage - l.StartPage)
             })
             .OrderBy(d => d.Date)
-            .ToListAsync();
-        var totalBooksRead = await _dbContext.ReadingLogs
-            .Where(l => l.UserId == userId && l.Date >= from && l.Date <= to)
-            .Select(l => l.BookId)
-            .Distinct()
-            .CountAsync();
+            .ToListAsync(cancellationToken);
+
+        var totalBooksRead =
+            await _dbContext.ReadingLogs
+                .Where(l =>
+                    l.UserId == userId &&
+                    l.Date >= from &&
+                    l.Date <= to)
+                .Select(l => l.BookId)
+                .Distinct()
+                .CountAsync(cancellationToken);
+
         return new ReadingSummaryDto
         {
             From = from,
             To = to,
-            TotalPages = days.Sum(d => d.PagesRead),
+            TotalPages =
+                days.Sum(d => d.PagesRead),
             TotalBooksRead = totalBooksRead,
             Days = days
         };
@@ -93,11 +122,13 @@ public class ReadingLogService
 
     public async Task<bool> DeleteAsync(
         int id,
-        int userId)
+        int userId,
+        CancellationToken cancellationToken = default)
     {
         return await _ownedEntityRepository.DeleteAsync(
             id,
-            userId);
+            userId,
+            cancellationToken);
     }
 
     private static ReadingLogDto ToDto(ReadingLog entry)

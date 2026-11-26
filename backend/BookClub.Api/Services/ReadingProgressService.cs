@@ -1,9 +1,9 @@
 using BookClub.Api.Data;
-using BookClub.Api.DTOs;
-using BookClub.Api.Models;
-using BookClub.Api.Exceptions;
-using Microsoft.EntityFrameworkCore;
 using BookClub.Api.Data.Repositories;
+using BookClub.Api.DTOs;
+using BookClub.Api.Exceptions;
+using BookClub.Api.Models;
+using Microsoft.EntityFrameworkCore;
 
 namespace BookClub.Api.Services;
 
@@ -27,9 +27,13 @@ public class ReadingProgressService
         string? lastChapterRead,
         ReadingStatus status,
         int? totalPages = null,
-        int? pagesRead = null)
+        int? pagesRead = null,
+        CancellationToken cancellationToken = default)
     {
-        var book = await _dbContext.Books.FindAsync(bookId);
+        var book = await _dbContext.Books
+            .FirstOrDefaultAsync(
+                b => b.Id == bookId,
+                cancellationToken);
 
         if (book is null)
         {
@@ -37,9 +41,11 @@ public class ReadingProgressService
         }
 
         var existing = await _dbContext.ReadingProgresses
-            .FirstOrDefaultAsync(rp =>
-                rp.UserId == userId &&
-                rp.BookId == bookId);
+            .FirstOrDefaultAsync(
+                rp =>
+                    rp.UserId == userId &&
+                    rp.BookId == bookId,
+                cancellationToken);
 
         if (existing is not null)
         {
@@ -59,7 +65,9 @@ public class ReadingProgressService
         };
 
         _dbContext.ReadingProgresses.Add(entry);
-        await _dbContext.SaveChangesAsync();
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
 
         return ToDto(entry);
     }
@@ -68,14 +76,17 @@ public class ReadingProgressService
         int id,
         int userId,
         int progress,
-        String? lastChapterRead,
+        string? lastChapterRead,
         ReadingStatus status,
         int? totalPages = null,
-        int? pagesRead = null)
+        int? pagesRead = null,
+        CancellationToken cancellationToken = default)
     {
-        var existing = await _ownedEntityRepository.GetEntityAsync(
-            id,
-            userId);
+        var existing = await _ownedEntityRepository
+            .GetEntityAsync(
+                id,
+                userId,
+                cancellationToken);
 
         if (existing is null)
         {
@@ -112,71 +123,71 @@ public class ReadingProgressService
             existing.PagesRead = newPagesRead;
         }
 
-        await _dbContext.SaveChangesAsync();
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
 
         return ToDto(existing);
     }
 
-    public async Task<bool> DeleteAsync(int id, int userId)
+    public async Task<bool> DeleteAsync(
+        int id,
+        int userId,
+        CancellationToken cancellationToken = default)
     {
         return await _ownedEntityRepository.DeleteAsync(
             id,
-            userId);
+            userId,
+            cancellationToken);
     }
 
     public async Task<GetReadingProgressDto?> GetAsync(
         int id,
-        int userId)
+        int userId,
+        CancellationToken cancellationToken = default)
     {
         return await _ownedEntityRepository
             .GetMappedAsync(
                 id,
                 userId,
-                ToDto);
+                ToDto,
+                cancellationToken);
     }
 
     public async Task<GetReadingProgressDto?> GetByWorkAsync(
         string workExternalId,
-        int userId)
+        int userId,
+        CancellationToken cancellationToken = default)
     {
         // Books may be stored as "OL123W" or "/works/OL123W".
         var prefixed = $"/works/{workExternalId}";
 
         var existing = await _dbContext.ReadingProgresses
-            .FirstOrDefaultAsync(rp =>
-                rp.UserId == userId &&
-                (rp.Book.ExternalId == workExternalId ||
-                 rp.Book.ExternalId == prefixed));
+            .FirstOrDefaultAsync(
+                rp =>
+                    rp.UserId == userId &&
+                    (
+                        rp.Book.ExternalId == workExternalId ||
+                        rp.Book.ExternalId == prefixed
+                    ),
+                cancellationToken);
 
-        return existing is null ? null : ToDto(existing);
-    }
-
-    private static GetReadingProgressDto ToDto(ReadingProgress entry)
-    {
-        return new GetReadingProgressDto
-        {
-            Id = entry.Id,
-            UserId = entry.UserId,
-            BookId = entry.BookId,
-            Progress = entry.Progress,
-            LastChapterRead = entry.LastChapterRead,
-            DateRead = entry.DateRead,
-            Status = entry.Status,
-            TotalPages = entry.TotalPages,
-            PagesRead = entry.PagesRead
-        };
+        return existing is null
+            ? null
+            : ToDto(existing);
     }
 
     public async Task<List<ReadingListItemDto>> GetLibraryAsync(
         int userId,
-        ReadingStatus? status = null)
+        ReadingStatus? status = null,
+        CancellationToken cancellationToken = default)
     {
         var query = _dbContext.ReadingProgresses
             .Where(rp => rp.UserId == userId);
 
         if (status.HasValue)
         {
-            query = query.Where(rp => rp.Status == status.Value);
+            query = query.Where(
+                rp => rp.Status == status.Value);
         }
 
         return await query
@@ -195,6 +206,23 @@ public class ReadingProgressService
                 TotalPages = rp.TotalPages,
                 LastChapterRead = rp.LastChapterRead
             })
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
+    }
+
+    private static GetReadingProgressDto ToDto(
+        ReadingProgress entry)
+    {
+        return new GetReadingProgressDto
+        {
+            Id = entry.Id,
+            UserId = entry.UserId,
+            BookId = entry.BookId,
+            Progress = entry.Progress,
+            LastChapterRead = entry.LastChapterRead,
+            DateRead = entry.DateRead,
+            Status = entry.Status,
+            TotalPages = entry.TotalPages,
+            PagesRead = entry.PagesRead
+        };
     }
 }

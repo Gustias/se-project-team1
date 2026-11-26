@@ -18,15 +18,19 @@ public class BookService
         string? isbn10,
         string? isbn13,
         string title,
-        string? author)
+        string? author,
+        CancellationToken cancellationToken = default)
     {
         var existing = await _dbContext.Books
-            .FirstOrDefaultAsync(b =>
-                b.ExternalId == externalId);
+            .FirstOrDefaultAsync(
+                b => b.ExternalId == externalId,
+                cancellationToken);
 
         if (existing is not null)
         {
-            return new CreateBookResult(ToDto(existing), false);
+            return new CreateBookResult(
+                ToDto(existing),
+                false);
         }
 
         var entry = new Book
@@ -39,15 +43,23 @@ public class BookService
         };
 
         _dbContext.Books.Add(entry);
-        await _dbContext.SaveChangesAsync();
 
-        return new CreateBookResult(ToDto(entry), true);
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
 
+        return new CreateBookResult(
+            ToDto(entry),
+            true);
     }
 
-    public async Task<GetBookDto?> GetAsync(int id)
+    public async Task<GetBookDto?> GetAsync(
+        int id,
+        CancellationToken cancellationToken = default)
     {
-        var existing = await _dbContext.Books.FindAsync(id);
+        var existing = await _dbContext.Books
+            .FirstOrDefaultAsync(
+                b => b.Id == id,
+                cancellationToken);
 
         if (existing is null)
         {

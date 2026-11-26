@@ -1,7 +1,7 @@
 using BookClub.Api.DTOs;
 using BookClub.Api.Services;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BookClub.Api.Controllers;
 
@@ -11,6 +11,7 @@ public class BooksController : ControllerBase
 {
     private readonly OpenLibraryService _openLibraryService;
     private readonly BookService _bookService;
+
     public BooksController(
         BookService bookService,
         OpenLibraryService openLibraryService)
@@ -26,46 +27,59 @@ public class BooksController : ControllerBase
     {
         if (string.IsNullOrWhiteSpace(q))
         {
-            return BadRequest("Search query cannot be empty.");
+            return BadRequest(
+                "Search query cannot be empty.");
         }
 
         var query = q.Trim();
 
         if (query.Length > 100)
         {
-            return BadRequest("Search query must be 100 characters or fewer.");
+            return BadRequest(
+                "Search query must be 100 characters or fewer.");
         }
 
-        var books = await _openLibraryService.SearchBooksAsync(
-            query,
-            cancellationToken);
+        var books =
+            await _openLibraryService.SearchBooksAsync(
+                query,
+                cancellationToken);
 
         return Ok(books);
     }
+
     [Authorize]
     [HttpPost]
     public async Task<IActionResult> CreateAsync(
-        CreateBookDto request)
+        CreateBookDto request,
+        CancellationToken cancellationToken)
     {
         var result = await _bookService.CreateAsync(
             request.ExternalId,
             request.Isbn10,
             request.Isbn13,
             request.Title,
-            request.Author);
+            request.Author,
+            cancellationToken);
 
         if (result.Created)
         {
-            return CreatedAtAction(nameof(Get), new { id = result.Book.Id }, result.Book);
+            return CreatedAtAction(
+                nameof(Get),
+                new { id = result.Book.Id },
+                result.Book);
         }
 
         return Ok(result.Book);
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> Get(int id)
+    public async Task<IActionResult> Get(
+        int id,
+        CancellationToken cancellationToken)
     {
-        var entry = await _bookService.GetAsync(id);
+        var entry = await _bookService.GetAsync(
+            id,
+            cancellationToken);
 
         if (entry is null)
         {
@@ -74,5 +88,4 @@ public class BooksController : ControllerBase
 
         return Ok(entry);
     }
-
 }
