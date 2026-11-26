@@ -1,6 +1,6 @@
 using BookClub.Api.DTOs;
-using BookClub.Api.Services;
 using BookClub.Api.Extensions;
+using BookClub.Api.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,7 +20,9 @@ public class BookRatingsController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<IActionResult> CreateAsync(CreateBookRatingDto request)
+    public async Task<IActionResult> CreateAsync(
+        CreateBookRatingDto request,
+        CancellationToken cancellationToken)
     {
         if (request.Rating < 1 || request.Rating > 5)
         {
@@ -39,16 +41,22 @@ public class BookRatingsController : ControllerBase
 
         try
         {
-            var rating = await _bookRatingService.CreateAsync(
-                currentUserId.Value,
-                request.BookId,
-                request.Rating);
+            var rating =
+                await _bookRatingService.CreateAsync(
+                    currentUserId.Value,
+                    request.BookId,
+                    request.Rating,
+                    cancellationToken);
 
             if (rating is null)
             {
                 return Conflict(new
                 {
-                    message = "Could not create rating. Check whether the user and book exist, the book is marked as read, and the book has not already been rated."
+                    message =
+                        "Could not create rating. " +
+                        "Check whether the user and book exist, " +
+                        "the book is marked as read, and the book " +
+                        "has not already been rated."
                 });
             }
 
@@ -58,13 +66,16 @@ public class BookRatingsController : ControllerBase
         {
             return BadRequest(new
             {
-                message = "Rating must be between 1 and 5."
+                message =
+                    "Rating must be between 1 and 5."
             });
         }
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetAsync(int id)
+    public async Task<IActionResult> GetAsync(
+        int id,
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -73,7 +84,11 @@ public class BookRatingsController : ControllerBase
             return Unauthorized();
         }
 
-        var rating = await _bookRatingService.GetAsync(id, currentUserId.Value);
+        var rating =
+            await _bookRatingService.GetAsync(
+                id,
+                currentUserId.Value,
+                cancellationToken);
 
         if (rating is null)
         {
@@ -84,7 +99,8 @@ public class BookRatingsController : ControllerBase
     }
 
     [HttpGet("list")]
-    public async Task<IActionResult> GetAsync()
+    public async Task<IActionResult> GetAsync(
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -93,7 +109,10 @@ public class BookRatingsController : ControllerBase
             return Unauthorized();
         }
 
-        var list = await _bookRatingService.GetListAsync(currentUserId.Value);
+        var list =
+            await _bookRatingService.GetListAsync(
+                currentUserId.Value,
+                cancellationToken);
 
         return Ok(list);
     }

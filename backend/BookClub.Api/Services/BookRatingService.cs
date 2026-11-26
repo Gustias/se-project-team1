@@ -21,11 +21,13 @@ public class BookRatingService
     public async Task<BookRatingDto?> CreateAsync(
         int userId,
         int bookId,
-        int rating)
-
+        int rating,
+        CancellationToken cancellationToken = default)
     {
         var userExists = await _dbContext.Users
-            .AnyAsync(u => u.Id == userId);
+            .AnyAsync(
+                u => u.Id == userId,
+                cancellationToken);
 
         if (!userExists)
         {
@@ -33,28 +35,36 @@ public class BookRatingService
         }
 
         var bookExists = await _dbContext.Books
-            .AnyAsync(b => b.Id == bookId);
+            .AnyAsync(
+                b => b.Id == bookId,
+                cancellationToken);
 
         if (!bookExists)
         {
             return null;
         }
 
-        var hasReadBook = await _dbContext.ReadingProgresses
-            .AnyAsync(rp =>
-                rp.UserId == userId &&
-                rp.BookId == bookId &&
-                rp.Status == ReadingStatus.Read);
+        var hasReadBook =
+            await _dbContext.ReadingProgresses
+                .AnyAsync(
+                    rp =>
+                        rp.UserId == userId &&
+                        rp.BookId == bookId &&
+                        rp.Status == ReadingStatus.Read,
+                    cancellationToken);
 
         if (!hasReadBook)
         {
             return null;
         }
 
-        var existing = await _dbContext.BookRatingEntries
-            .FirstOrDefaultAsync(r =>
-                r.UserId == userId &&
-                r.BookId == bookId);
+        var existing =
+            await _dbContext.BookRatingEntries
+                .FirstOrDefaultAsync(
+                    r =>
+                        r.UserId == userId &&
+                        r.BookId == bookId,
+                    cancellationToken);
 
         if (existing is not null)
         {
@@ -71,20 +81,24 @@ public class BookRatingService
         };
 
         _dbContext.BookRatingEntries.Add(entry);
-        await _dbContext.SaveChangesAsync();
+
+        await _dbContext.SaveChangesAsync(
+            cancellationToken);
 
         return ToDto(entry);
     }
 
     public async Task<BookRatingDto?> GetAsync(
         int id,
-        int userId)
+        int userId,
+        CancellationToken cancellationToken = default)
     {
         return await _ownedEntityRepository
             .GetMappedAsync(
                 id,
                 userId,
-                ToDto);
+                ToDto,
+                cancellationToken);
     }
 
     private static BookRatingDto ToDto(BookRatingEntry entry)
@@ -98,13 +112,17 @@ public class BookRatingService
         };
     }
 
-    public async Task<List<BookRatingListItemDto>> GetListAsync(int userId)
+    public async Task<List<BookRatingListItemDto>> GetListAsync(
+        int userId,
+        CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.BookRatingEntries
-            .Where(e => e.UserId == userId)
-            .Include(e => e.Book);
-
-        var entries = await query.OrderByDescending(e => e.Rating).ThenBy(e => e.Book.Title).ToListAsync();// highest first
+        var entries =
+            await _dbContext.BookRatingEntries
+                .Where(e => e.UserId == userId)
+                .Include(e => e.Book)
+                .OrderByDescending(e => e.Rating)
+                .ThenBy(e => e.Book.Title)
+                .ToListAsync(cancellationToken);
 
         return entries
             .Select(e => new BookRatingListItemDto
@@ -116,5 +134,4 @@ public class BookRatingService
             })
             .ToList();
     }
-
 }

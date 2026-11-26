@@ -1,9 +1,9 @@
 using BookClub.Api.DTOs;
-using BookClub.Api.Services;
-using BookClub.Api.Models;
 using BookClub.Api.Extensions;
-using Microsoft.AspNetCore.Mvc;
+using BookClub.Api.Models;
+using BookClub.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace BookClub.Api.Controllers;
 
@@ -22,7 +22,8 @@ public class ReadingProgressController : ControllerBase
 
     [HttpPost]
     public async Task<IActionResult> CreateEntry(
-        CreateReadingProgressDto request)
+        CreateReadingProgressDto request,
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -31,14 +32,16 @@ public class ReadingProgressController : ControllerBase
             return Unauthorized();
         }
 
-        var entry = await _readingProgressService.CreateAsync(
-            currentUserId.Value,
-            request.BookId,
-            request.Progress,
-            request.LastChapterRead,
-            request.Status,
-            request.TotalPages,
-            request.PagesRead);
+        var entry =
+            await _readingProgressService.CreateAsync(
+                currentUserId.Value,
+                request.BookId,
+                request.Progress,
+                request.LastChapterRead,
+                request.Status,
+                request.TotalPages,
+                request.PagesRead,
+                cancellationToken);
 
         return CreatedAtAction(
             nameof(GetEntry),
@@ -49,7 +52,8 @@ public class ReadingProgressController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> UpdateEntry(
         int id,
-        UpdateReadingProgressDto request)
+        UpdateReadingProgressDto request,
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -58,14 +62,16 @@ public class ReadingProgressController : ControllerBase
             return Unauthorized();
         }
 
-        var updated = await _readingProgressService.UpdateAsync(
-            id,
-            currentUserId.Value,
-            request.Progress,
-            request.LastChapterRead,
-            request.Status,
-            request.TotalPages,
-            request.PagesRead);
+        var updated =
+            await _readingProgressService.UpdateAsync(
+                id,
+                currentUserId.Value,
+                request.Progress,
+                request.LastChapterRead,
+                request.Status,
+                request.TotalPages,
+                request.PagesRead,
+                cancellationToken);
 
         if (updated is null)
         {
@@ -76,7 +82,9 @@ public class ReadingProgressController : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteEntry(int id)
+    public async Task<IActionResult> DeleteEntry(
+        int id,
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -85,9 +93,11 @@ public class ReadingProgressController : ControllerBase
             return Unauthorized();
         }
 
-        var deleted = await _readingProgressService.DeleteAsync(
-            id,
-            currentUserId.Value);
+        var deleted =
+            await _readingProgressService.DeleteAsync(
+                id,
+                currentUserId.Value,
+                cancellationToken);
 
         if (!deleted)
         {
@@ -97,9 +107,10 @@ public class ReadingProgressController : ControllerBase
         return NoContent();
     }
 
-    // The current user's entry for a work, e.g. GET api/reading-progress/by-work/OL45883W
     [HttpGet("by-work/{workExternalId}")]
-    public async Task<IActionResult> GetEntryByWork(string workExternalId)
+    public async Task<IActionResult> GetEntryByWork(
+        string workExternalId,
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -108,9 +119,11 @@ public class ReadingProgressController : ControllerBase
             return Unauthorized();
         }
 
-        var entry = await _readingProgressService.GetByWorkAsync(
-            workExternalId,
-            currentUserId.Value);
+        var entry =
+            await _readingProgressService.GetByWorkAsync(
+                workExternalId,
+                currentUserId.Value,
+                cancellationToken);
 
         if (entry is null)
         {
@@ -121,7 +134,9 @@ public class ReadingProgressController : ControllerBase
     }
 
     [HttpGet("{id}")]
-    public async Task<IActionResult> GetEntry(int id)
+    public async Task<IActionResult> GetEntry(
+        int id,
+        CancellationToken cancellationToken)
     {
         var currentUserId = User.GetUserId();
 
@@ -130,9 +145,11 @@ public class ReadingProgressController : ControllerBase
             return Unauthorized();
         }
 
-        var entry = await _readingProgressService.GetAsync(
-            id,
-            currentUserId.Value);
+        var entry =
+            await _readingProgressService.GetAsync(
+                id,
+                currentUserId.Value,
+                cancellationToken);
 
         if (entry is null)
         {
@@ -144,6 +161,7 @@ public class ReadingProgressController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetEntries(
+        CancellationToken cancellationToken,
         [FromQuery] ReadingStatus? status = null)
     {
         var currentUserId = User.GetUserId();
@@ -153,9 +171,11 @@ public class ReadingProgressController : ControllerBase
             return Unauthorized();
         }
 
-        var entries = await _readingProgressService.GetLibraryAsync(
-            currentUserId.Value,
-            status);
+        var entries =
+            await _readingProgressService.GetLibraryAsync(
+                currentUserId.Value,
+                status,
+                cancellationToken);
 
         return Ok(entries);
     }
