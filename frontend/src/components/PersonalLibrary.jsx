@@ -19,6 +19,14 @@ function LibraryRow({
   const workPath =
     `/books/${encodeURIComponent(client.toWorkId(item.externalId))}`;
 
+  const bookState = {
+    externalId: item.externalId,
+    title: item.title,
+    author: item.author,
+    isbn13: item.isbn13,
+    coverUrl,
+  };
+
   return (
     <li className="edition">
       {coverUrl && !imgFailed ? (
@@ -34,7 +42,11 @@ function LibraryRow({
 
       <div className="edition-info">
         <h3>
-          <Link className="book-link" to={workPath}>
+          <Link
+            className="book-link"
+            to={workPath}
+            state={{ book: bookState }}
+          >
             {item.title}
           </Link>
         </h3>
@@ -78,6 +90,7 @@ function LibraryRow({
         <Link
           className="view-editions-btn"
           to={workPath}
+          state={{ book: bookState }}
         >
           View details
         </Link>
