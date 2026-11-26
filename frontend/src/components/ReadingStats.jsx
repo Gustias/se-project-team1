@@ -1,63 +1,97 @@
-import {useEffect, useState} from "react";
-import {getRatingList, getReadingSummary} from "../api/client.js";
-import {Bar, BarChart, CartesianGrid, Tooltip, XAxis, YAxis} from "recharts";
+import { useEffect, useState } from "react";
+import {
+  getRatingList,
+  getReadingSummary,
+} from "../api/client.js";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+function toIso(date) {
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+function fillDays(days, from, to) {
+  const result = [];
+
+  const fromParts = from.split("-");
+  const toParts = to.split("-");
+
+  const current = new Date(
+    Number(fromParts[0]),
+    Number(fromParts[1]) - 1,
+    Number(fromParts[2]),
+  );
+
+  const end = new Date(
+    Number(toParts[0]),
+    Number(toParts[1]) - 1,
+    Number(toParts[2]),
+  );
+
+  while (current <= end) {
+    const date = toIso(current);
+
+    const matchingDay = days.find(
+      (day) => day.date === date,
+    );
+
+    result.push({
+      date,
+      pagesRead: matchingDay?.pagesRead ?? 0,
+    });
+
+    current.setDate(current.getDate() + 1);
+  }
+
+  return result;
+}
 
 function fillMonths(days, from, to) {
   const result = [];
 
   const fromParts = from.split("-");
   const toParts = to.split("-");
-  const current = new Date(Number(fromParts[0]), Number(fromParts[1]) - 1, 1);
-  const end = new Date(Number(toParts[0]), Number(toParts[1]) - 1, 1);
+
+  const current = new Date(
+    Number(fromParts[0]),
+    Number(fromParts[1]) - 1,
+    1,
+  );
+
+  const end = new Date(
+    Number(toParts[0]),
+    Number(toParts[1]) - 1,
+    1,
+  );
 
   while (current <= end) {
-    const month = toIso(current).slice(0, 7); // "get current month"
+    const month = toIso(current).slice(0, 7);
 
-    // add up every day that belongs to this month
-    let total = 0;
-    for (const day of days) {
-      if (day.date.startsWith(month)) {
-        total = total + day.pagesRead;
-      }
-    }
+    const pagesRead = days
+      .filter((day) => day.date.startsWith(month))
+      .reduce(
+        (total, day) => total + day.pagesRead,
+        0,
+      );
 
-    result.push({ date: month, pagesRead: total });
-    current.setMonth(current.getMonth() + 1); // next month
+    result.push({
+      date: month,
+      pagesRead,
+    });
+
+    current.setMonth(current.getMonth() + 1);
   }
 
   return result;
-}
-function fillDays(days, from, to) {
-  const result = [];
-
-  // turn "2026-10-07" into a Date
-  const fromParts = from.split("-");
-  const toParts = to.split("-");
-  const current = new Date(Number(fromParts[0]), Number(fromParts[1]) - 1, Number(fromParts[2]));
-  const end = new Date(Number(toParts[0]), Number(toParts[1]) - 1, Number(toParts[2]));
-
-  // go through every date
-  while (current <= end) {
-    const date = toIso(current);
-
-    // look for this date in the data from the API, if not found make it 0 pages read
-    let pagesRead = 0;
-    for (const day of days) {
-      if (day.date === date) {
-        pagesRead = day.pagesRead;
-      }
-    }
-
-    result.push({ date: date, pagesRead: pagesRead });
-    current.setDate(current.getDate() + 1); // move to the next day
-  }
-  return result;
-}
-
-function toIso(d){
-  const m = String(d.getMonth() +1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${d.getFullYear()}-${m}-${day}`;
 }
 
 function getRange(key) {
@@ -65,22 +99,36 @@ function getRange(key) {
 
   if (key === "month") {
     const from = new Date(today);
-    from.setDate(today.getDate() - 29); // 30 days including today
-    return { from: toIso(from), to: toIso(today) };
+    from.setDate(today.getDate() - 29);
+
+    return {
+      from: toIso(from),
+      to: toIso(today),
+    };
   }
 
   if (key === "year") {
-    const from = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
-    return { from: toIso(from), to: toIso(today) };
+    const from = new Date(
+      today.getFullYear() - 1,
+      today.getMonth(),
+      today.getDate(),
+    );
+
+    return {
+      from: toIso(from),
+      to: toIso(today),
+    };
   }
 
-  // "all"
-  return { from: "2000-01-01", to: toIso(today) };
+  return {
+    from: "2000-01-01",
+    to: toIso(today),
+  };
 }
 
-function getHighestRatedBookTitle(ratingList) {
+function getHighestRatedBook(ratingList) {
   if (!ratingList || ratingList.length === 0) {
-    return "No ratings yet";
+    return null;
   }
 
   let highest = ratingList[0];
@@ -91,121 +139,304 @@ function getHighestRatedBookTitle(ratingList) {
     }
   }
 
-  return highest.title;
+  return highest;
 }
 
-function getLowestRatedBookTitle(ratingList) {
+function getLowestRatedBook(ratingList) {
   if (!ratingList || ratingList.length === 0) {
-    return "No ratings yet";
+    return null;
   }
 
-  let highest = ratingList[0];
+  let lowest = ratingList[0];
 
   for (const book of ratingList) {
-    if (book.rating < highest.rating) {
-      highest = book;
+    if (book.rating < lowest.rating) {
+      lowest = book;
     }
   }
 
-  return highest.title;
+  return lowest;
 }
 
 export default function ReadingStats() {
-  const [range, setRange] = useState("month"); // month, year, all
+  const [range, setRange] = useState("month");
+
   const [days, setDays] = useState([]);
-  const [totalBooksRead, setTotalBooksRead] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [daysRead, setDaysRead] = useState(0);
+  const [totalBooksRead, setTotalBooksRead] =
+    useState(0);
+  const [totalPagesRead, setTotalPagesRead] =
+    useState(0);
+
   const [ratingList, setRatingList] = useState([]);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    setLoading(true);
-    const { from, to } = getRange(range);
-    getRatingList()
-      .then((data) => {
-        setRatingList(data)
-      })
-      .catch((err) => console.log(err))
-    getReadingSummary(from, to)
-      .then((data) => {
-        setTotalBooksRead(data.totalBooksRead);
-        if (range === "month") {
-          setDays(fillDays(data.days, from, to));
-        } else if (data.days.length === 0) {
-          setDays([]);
-        } else if (range === "year") {
-          setDays(fillMonths(data.days, from, to));
-        } else {
-          // "all": start at the first month that has a log, not at 2000
-          setDays(fillMonths(data.days, data.days[0].date, to));
+    let cancelled = false;
+
+    async function loadRatings() {
+      try {
+        const data = await getRatingList();
+
+        if (!cancelled) {
+          setRatingList(data);
         }
-      })
-      .catch((err) => console.log(err))
-      .finally(() => setLoading(false));
+      } catch (err) {
+        if (!cancelled) {
+          console.error(
+            "Could not load ratings:",
+            err,
+          );
+        }
+      }
+    }
+
+    loadRatings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadStats() {
+      setLoading(true);
+      setError("");
+
+      const { from, to } = getRange(range);
+
+      try {
+        const data = await getReadingSummary(
+          from,
+          to,
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setDaysRead(data.days.length);
+        setTotalBooksRead(data.totalBooksRead);
+        setTotalPagesRead(data.totalPages);
+
+        if (range === "month") {
+          setDays(
+            fillDays(
+              data.days,
+              from,
+              to,
+            ),
+          );
+
+          return;
+        }
+
+        if (data.days.length === 0) {
+          setDays([]);
+          return;
+        }
+
+        if (range === "year") {
+          setDays(
+            fillMonths(
+              data.days,
+              from,
+              to,
+            ),
+          );
+
+          return;
+        }
+
+        // All time starts from the first month
+        // that actually has reading activity.
+        setDays(
+          fillMonths(
+            data.days,
+            data.days[0].date,
+            to,
+          ),
+        );
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err.message ||
+              "Could not load reading statistics.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadStats();
+
+    return () => {
+      cancelled = true;
+    };
   }, [range]);
 
-    const entriesCount = days.filter(d => d.pagesRead > 0).length; // aggregated entries, not actual ones
-    let totalPagesRead = 0;
-    for (const day of days) {
-      totalPagesRead = totalPagesRead + day.pagesRead;
-    }
-    const averagePagesPerDay = (totalPagesRead / entriesCount).toFixed(0);
-    const lowestRatedBook = getLowestRatedBookTitle(ratingList);
-    const highestRatedBook = getHighestRatedBookTitle(ratingList);
+  const averagePagesPerReadingDay =
+    daysRead > 0
+      ? Math.round(totalPagesRead / daysRead)
+      : 0;
+
+  const highestRatedBook =
+    getHighestRatedBook(ratingList);
+
+  const lowestRatedBook =
+    getLowestRatedBook(ratingList);
 
   return (
     <>
       <h1>Reading stats</h1>
 
+      <div>
+        <button
+          type="button"
+          onClick={() => setRange("month")}
+          disabled={range === "month"}
+        >
+          Last 30 days
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setRange("year")}
+          disabled={range === "year"}
+        >
+          Last 1 year
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setRange("all")}
+          disabled={range === "all"}
+        >
+          All
+        </button>
+      </div>
+
       {loading ? (
         <p>Loading...</p>
-      ) : entriesCount > 0 ?
-        (
+      ) : error ? (
+        <p className="error">{error}</p>
+      ) : daysRead > 0 ? (
         <>
-        <div>
           <div className="stats-grid">
-            <h4 className="stats-card">Days read: {entriesCount}</h4>
-            <h4 className="stats-card">Unique books: {totalBooksRead}</h4>
-            <h4 className="stats-card">Pages read: {totalPagesRead}</h4>
-            <h4 className="stats-card">Average pages per day: {averagePagesPerDay}</h4>
+            <h4 className="stats-card">
+              Days read: {daysRead}
+            </h4>
+
+            <h4 className="stats-card">
+              Books with activity: {totalBooksRead}
+            </h4>
+
+            <h4 className="stats-card">
+              Pages read: {totalPagesRead}
+            </h4>
+
+            <h4 className="stats-card">
+              Average pages per reading day:{" "}
+              {averagePagesPerReadingDay}
+            </h4>
+
             {ratingList.length === 1 ? (
-              <h4 className={`stats-card ${ratingList.length === 1 ? "centered-card" : ""}`}>
-                Only rated book: {ratingList[0].title} ({ratingList[0].rating})
+              <h4 className="stats-card centered-card">
+                Only rated book:{" "}
+                {ratingList[0].title} (
+                {ratingList[0].rating}/5)
               </h4>
             ) : ratingList.length > 1 ? (
               <>
                 <h4 className="stats-card">
-                  Highest rated book: {getHighestRatedBookTitle(ratingList)}
+                  Highest rated book (all time):{" "}
+                  {highestRatedBook?.title} (
+                  {highestRatedBook?.rating}/5)
                 </h4>
+
                 <h4 className="stats-card">
-                  Lowest rated book: {getLowestRatedBookTitle(ratingList)}
+                  Lowest rated book (all time):{" "}
+                  {lowestRatedBook?.title} (
+                  {lowestRatedBook?.rating}/5)
                 </h4>
               </>
             ) : (
-              <h4 className="stats-card">No ratings yet</h4>
+              <h4 className="stats-card centered-card">
+                No ratings yet
+              </h4>
             )}
           </div>
-          <br></br>
-          <BarChart width={1000} height={400} data={days}>
-            <Bar name="Pages" dataKey="pagesRead" fill="#303030" />
+
+          <br />
+
+          <BarChart
+            width={1000}
+            height={400}
+            data={days}
+          >
+            <CartesianGrid stroke="#484848" />
+
             <XAxis
               dataKey="date"
-              interval={range === "month" ? 0 : "preserveStartEnd"}
-              tickFormatter={(d) => (range === "month" ? Number(d.slice(8)) : d)}
+              interval={
+                range === "month"
+                  ? 0
+                  : "preserveStartEnd"
+              }
+              tickFormatter={(date) =>
+                range === "month"
+                  ? Number(date.slice(8))
+                  : date
+              }
             />
-            <YAxis dataKey="pagesRead" allowDecimals={false} />
+
+            <YAxis
+              allowDecimals={false}
+            />
+
             <Tooltip />
-            <CartesianGrid stroke="#484848" />
+
+            <Bar
+              name="Pages"
+              dataKey="pagesRead"
+              fill="#303030"
+            />
           </BarChart>
-        </div>
-          <div>
-            <button onClick={() => setRange("month")}>Last 30 days</button>
-            <button onClick={() => setRange("year")}>Last 1 year</button>
-            <button onClick={() => setRange("all")}>All</button>
-          </div>
         </>
       ) : (
         <div>
-          <h4>No entries found.</h4>
+          <h4>No reading activity found.</h4>
+
+          {ratingList.length === 1 && (
+            <p>
+              Only rated book:{" "}
+              {ratingList[0].title} (
+              {ratingList[0].rating}/5)
+            </p>
+          )}
+
+          {ratingList.length > 1 && (
+            <>
+              <p>
+                Highest rated book (all time):{" "}
+                {highestRatedBook?.title} (
+                {highestRatedBook?.rating}/5)
+              </p>
+
+              <p>
+                Lowest rated book (all time):{" "}
+                {lowestRatedBook?.title} (
+                {lowestRatedBook?.rating}/5)
+              </p>
+            </>
+          )}
         </div>
       )}
     </>
