@@ -62,6 +62,61 @@ function nextStatus(entry, completed) {
   return entry.status;
 }
 
+function getEditionYear(edition) {
+  const match = edition.publishDate?.match(/\b(\d{4})\b/);
+  return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+}
+
+function sortEditions(editions) {
+  return [...editions].sort((a, b) => {
+    const aHasCover = Boolean(a.coverUrl);
+    const bHasCover = Boolean(b.coverUrl);
+
+    const aHasPages = a.pageCount > 0;
+    const bHasPages = b.pageCount > 0;
+
+    // Best entries first: cover + page count.
+    const aQuality =
+      (aHasCover ? 1 : 0) +
+      (aHasPages ? 2 : 0);
+
+    const bQuality =
+      (bHasCover ? 1 : 0) +
+      (bHasPages ? 2 : 0);
+
+    if (aQuality !== bQuality) {
+      return bQuality - aQuality;
+    }
+
+    // Among similarly useful editions, prefer older/original releases.
+    return getEditionYear(a) - getEditionYear(b);
+  });
+}
+
+function getDefaultEdition(editions) {
+  if (editions.length === 0) {
+    return undefined;
+  }
+
+  // Prefer the earliest edition that has a usable page count.
+  const withPages = editions
+    .filter((edition) => edition.pageCount > 0)
+    .sort(
+      (a, b) =>
+        getEditionYear(a) - getEditionYear(b),
+    );
+
+  if (withPages.length > 0) {
+    return withPages[0];
+  }
+
+  // Fallback to the earliest known edition.
+  return [...editions].sort(
+    (a, b) =>
+      getEditionYear(a) - getEditionYear(b),
+  )[0];
+}
+
 function BookReadingProgress() {
   const { book, externalId } = useOutletContext();
 
@@ -145,9 +200,18 @@ function BookReadingProgress() {
         controller.signal,
       )
       .then((result) => {
-        setEditions(result.editions);
+        const sortedEditions = sortEditions(result.editions);
+        const defaultEdition = getDefaultEdition(
+          result.editions,
+        );
+
+        setEditions(sortedEditions);
         setTotalEditions(result.total);
         setNextOffset(result.editions.length);
+
+        if (defaultEdition) {
+          setEditionId(defaultEdition.externalId);
+        }
       })
       .catch((err) => {
         if (err.name !== "AbortError") setError(err.message);
@@ -173,7 +237,12 @@ function BookReadingProgress() {
         { limit: PAGE_SIZE, offset: nextOffset },
         controller.signal,
       );
-      setEditions((prev) => [...prev, ...result.editions]);
+      setEditions((prev) =>
+        sortEditions([
+          ...prev,
+          ...result.editions,
+        ]),
+      );
       setTotalEditions(result.total);
       // Advance by what we actually received, not by the requested page size.
       setNextOffset((prev) => prev + result.editions.length);
