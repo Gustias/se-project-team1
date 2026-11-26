@@ -7,49 +7,49 @@
 
 The Book Club application allows users to track their reading progress. Different editions of the same book may have different page counts and some editions may not have information about the page count.
 
-We needed a reading progress model that works with these differences and still lets users track their progress even when the total page count is unknown. We also need progress values in the database, so books can be sorted, filtered and summarized by progress in SQL queries.
+We needed a reading progress model that works with these differences and still lets users track their progress even when the total page count is unknown. Having percentage values stored in the database also allows books to be sorted, filtered, and summarized by progress in SQL queries.
 
 ## Considered options
 
 ### 1. Percentage-based progress
 
-- **Pros:** Simple to store and display; also suits e-books and audiobooks, which often show only a percentage.
-- **Cons:** Does not show the number of pages read; less convenient for users who track reading by pages.
+- **Pros:** Simple to store and display; also suitable for e-books and audiobooks, which often display progress as a percentage.
+- **Cons:** Does not directly show the number of pages read; less convenient for users who track their reading by pages.
 
 ### 2. Pages read + total pages, percentage calculated when needed
 
-- **Pros:** No redundant data, so no risk of inconsistency.
-- **Cons:** The percentage is not stored, so sorting, filtering and statistics by progress require calculating it in every query.
+- **Pros:** Avoids redundant progress data and inconsistencies between stored page counts and percentages.
+- **Cons:** Sorting, filtering, and calculating statistics by percentage require additional calculations in database queries.
 
-### 3. Pages read + total pages, percentage stored by the backend
+### 3. Pages read + total pages, stored percentage
 
 - **Pros:** The percentage is stored in the database and can be used directly in queries.
-- **Cons:** Redundant data that can become inconsistent, for example when the total page count changes.
-
-### 4. Pages read + total pages, percentage as a database computed column
-
-- **Pros:** The percentage is available in the database and always consistent.
-- **Cons:** The calculation lives in the database, which is harder to change and test; ties us to PostgreSQL features.
+- **Cons:** Introduces redundant data that may become inconsistent if the percentage is not recalculated when the page count changes.
 
 ## Decision
 
-We will store **pages read** and **optional total page count**, and also store the **percentage** in the database.
+We decided to store **pages read**, **optional total page count** and the **percentage** in the database.
 
-We store the percentage so that progress can be sorted, filtered and aggregated directly in SQL queries without recalculating it each time. The backend is the only place that calculates it and it recalculates the value whenever pages read or the total page count change. The frontend only displays it. If the total page count is unknown, the percentage stays empty and users can still track pages read.
+Storing the percentage allows progress to be sorted, filtered, and aggregated directly in SQL queries without recalculating it each time.
 
-The total page count comes from the selected book edition. If the edition has no page count, the user can enter it manually [for their own progress record / for the edition].
+The frontend calculates the percentage before saving reading progress when the total page count is known. The backend validates and stores the provided values. The frontend also calculates the displayed percentage from the page counts.
+
+If the total page count is unknown, users can still track the number of pages read. In this case, when saving progress, the previous percentage value is retained, or 0 is used for a new entry.
+
+The total page count comes from the selected book edition. If the edition has no page count information, the user can enter it manually. This value is stored in the user's personal reading progress record.
 
 ## Consequences
 
 ### Positive
 
-- Users track progress by pages, which matches how they read printed books.
-- Works with different editions, including those without a page count.
-- Progress can be shown as pages and as a percentage.
-- The percentage can be used directly in database queries.
+- Users can track progress by pages, which is more intuitive when reading printed books.
+- Supports different book editions, including those without page count.
+- Progress can be shown in both pages and percentages.
+- The stored percentage can be used directly in database queries.
 
 ### Negative
 
-- The stored percentage is redundant data and can become inconsistent if it's not recalculated after a change.
-- The backend needs extra logic for edition selection, percentage calculation and validation (pages read cannot be negative or larger than the total).
-- The percentage is only as accurate as the total page count.
+- The stored percentage is redundant data and may become inconsistent if it is not recalculated after a change.
+- Additional frontend logic is required for edition selection, percentage calculation, and input validation.
+- The backend validates individual values but does not ensure consistency between the stored percentage and page counts.
+- When the total page count is unknown, the percentage is 0 for new entries or stays at its previous value, so it can be misleading in queries.
