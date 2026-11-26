@@ -1,9 +1,9 @@
 using BookClub.Api.Data;
+using BookClub.Api.Data.Repositories;
 using BookClub.Api.DTOs;
+using BookClub.Api.Exceptions;
 using BookClub.Api.Models;
 using Microsoft.EntityFrameworkCore;
-using BookClub.Api.Exceptions;
-using BookClub.Api.Data.Repositories;
 
 namespace BookClub.Api.Services;
 

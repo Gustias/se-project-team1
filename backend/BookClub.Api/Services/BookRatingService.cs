@@ -3,6 +3,7 @@ using BookClub.Api.DTOs;
 using BookClub.Api.Models;
 using Microsoft.EntityFrameworkCore;
 namespace BookClub.Api.Services;
+
 using BookClub.Api.Data.Repositories;
 
 public class BookRatingService

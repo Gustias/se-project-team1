@@ -1,12 +1,12 @@
 using BookClub.Api.Data;
-using BookClub.Api.Services;
-using BookClub.Api.Models;
-using BookClub.Api.Exceptions;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Antiforgery;
-using Microsoft.AspNetCore.Mvc;
 using BookClub.Api.Data.Repositories;
+using BookClub.Api.Exceptions;
+using BookClub.Api.Models;
+using BookClub.Api.Services;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
