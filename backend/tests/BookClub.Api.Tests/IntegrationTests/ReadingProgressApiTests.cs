@@ -6,7 +6,7 @@ namespace BookClub.Api.Tests.IntegrationTests;
 [Trait("Category", "Integration")]
 public class ReadingProgressApiTests : IClassFixture<ApiFactory>
 {
-    private const int Reading = 0, Read = 1; // enum values sent as numbers
+    private const int Reading = 0, Read = 1, WantToRead = 2;
     private readonly ApiTestClient _api;
     private readonly ApiFactory _factory;
 
@@ -17,6 +17,7 @@ public class ReadingProgressApiTests : IClassFixture<ApiFactory>
     }
 
     private record ProgressView(int Id, int UserId, int BookId, int Progress, string? LastChapterRead, int Status);
+    private record LibraryItemView(int Id, int BookId, int Status);
 
     private async Task<(int OwnerId, int BookId, int Id, ApiTestClient OtherApi)>
     CreateEntryWithTwoUsersAsync()
@@ -114,6 +115,148 @@ public class ReadingProgressApiTests : IClassFixture<ApiFactory>
 
         Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
         Assert.Equal(HttpStatusCode.NotFound, after.StatusCode);
+    }
+
+    [Fact]
+    public async Task Delete_RemovesEntryButKeepsBook()
+    {
+        var userId = await _api.RegisterAndLoginAsync();
+        var bookId = await _api.CreateBookAsync();
+        var id = await _api.CreateProgressAsync(
+            userId,
+            bookId,
+            Reading);
+
+        using var deleted = await _api.DeleteAsync(
+            $"/api/reading-progress/{id}");
+
+        Assert.Equal(HttpStatusCode.NoContent, deleted.StatusCode);
+
+        using var progressResponse = await _api.Http.GetAsync(
+            $"/api/reading-progress/{id}");
+
+        Assert.Equal(
+            HttpStatusCode.NotFound,
+            progressResponse.StatusCode);
+
+        using var bookResponse = await _api.Http.GetAsync(
+            $"/api/books/{bookId}");
+
+        Assert.Equal(
+            HttpStatusCode.OK,
+            bookResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetLibrary_ReturnsEntriesWithDifferentStatuses()
+    {
+        var userId = await _api.RegisterAndLoginAsync();
+
+        var readingBookId = await _api.CreateBookAsync();
+        var readBookId = await _api.CreateBookAsync();
+        var wantToReadBookId = await _api.CreateBookAsync();
+
+        var readingId = await _api.CreateProgressAsync(
+            userId,
+            readingBookId,
+            Reading);
+
+        var readId = await _api.CreateProgressAsync(
+            userId,
+            readBookId,
+            Read);
+
+        var wantToReadId = await _api.CreateProgressAsync(
+            userId,
+            wantToReadBookId,
+            WantToRead);
+
+        var entries = await _api.Http
+            .GetFromJsonAsync<List<LibraryItemView>>(
+                "/api/reading-progress");
+
+        Assert.NotNull(entries);
+        Assert.Contains(entries, entry =>
+            entry.Id == readingId &&
+            entry.Status == Reading);
+
+        Assert.Contains(entries, entry =>
+            entry.Id == readId &&
+            entry.Status == Read);
+
+        Assert.Contains(entries, entry =>
+            entry.Id == wantToReadId &&
+            entry.Status == WantToRead);
+    }
+
+    [Fact]
+    public async Task GetLibrary_WithStatusFilter_ReturnsOnlyMatchingEntries()
+    {
+        var userId = await _api.RegisterAndLoginAsync();
+
+        var readingBookId = await _api.CreateBookAsync();
+        var wantToReadBookId = await _api.CreateBookAsync();
+
+        await _api.CreateProgressAsync(
+            userId,
+            readingBookId,
+            Reading);
+
+        var wantToReadId = await _api.CreateProgressAsync(
+            userId,
+            wantToReadBookId,
+            WantToRead);
+
+        var entries = await _api.Http
+            .GetFromJsonAsync<List<LibraryItemView>>(
+                $"/api/reading-progress?status={WantToRead}");
+
+        Assert.NotNull(entries);
+
+        Assert.Single(entries);
+
+        Assert.Equal(
+            wantToReadId,
+            entries[0].Id);
+
+        Assert.Equal(
+            WantToRead,
+            entries[0].Status);
+    }
+
+    [Fact]
+    public async Task GetLibrary_DoesNotReturnAnotherUsersEntries()
+    {
+        var userId = await _api.RegisterAndLoginAsync();
+
+        var ownBookId = await _api.CreateBookAsync();
+
+        var ownEntryId = await _api.CreateProgressAsync(
+            userId,
+            ownBookId,
+            WantToRead);
+
+        var otherApi = new ApiTestClient(_factory);
+        var otherUserId = await otherApi.RegisterAndLoginAsync();
+
+        var otherBookId = await otherApi.CreateBookAsync();
+
+        var otherEntryId = await otherApi.CreateProgressAsync(
+            otherUserId,
+            otherBookId,
+            WantToRead);
+
+        var entries = await _api.Http
+            .GetFromJsonAsync<List<LibraryItemView>>(
+                "/api/reading-progress");
+
+        Assert.NotNull(entries);
+
+        Assert.Contains(entries, entry =>
+            entry.Id == ownEntryId);
+
+        Assert.DoesNotContain(entries, entry =>
+            entry.Id == otherEntryId);
     }
 
     [Fact]

@@ -82,6 +82,8 @@ public class ReadingProgressService
             return null;
         }
 
+        var previousPagesRead = existing.PagesRead;
+
         existing.Progress = progress;
         existing.LastChapterRead = lastChapterRead;
         existing.Status = status;
@@ -89,12 +91,25 @@ public class ReadingProgressService
         if (totalPages is not null)
         {
             existing.TotalPages = totalPages.Value;
-        } 
+        }
 
-        // Omitted pagesRead keeps the stored value.
         if (pagesRead is not null)
         {
-            existing.PagesRead = pagesRead.Value;
+            var newPagesRead = pagesRead.Value;
+
+            if (newPagesRead > previousPagesRead)
+            {
+                _dbContext.ReadingLogs.Add(new ReadingLog
+                {
+                    UserId = userId,
+                    BookId = existing.BookId,
+                    StartPage = previousPagesRead,
+                    EndPage = newPagesRead,
+                    Date = DateOnly.FromDateTime(DateTime.UtcNow)
+                });
+            }
+
+            existing.PagesRead = newPagesRead;
         }
 
         await _dbContext.SaveChangesAsync();
@@ -152,27 +167,34 @@ public class ReadingProgressService
         };
     }
 
-    public async Task<List<ReadingListItemDto>> GetByStatusAsync(
-    int userId,
-    ReadingStatus status)
+    public async Task<List<ReadingListItemDto>> GetLibraryAsync(
+        int userId,
+        ReadingStatus? status = null)
     {
-        return await _dbContext.ReadingProgresses
-          .Where(rp => rp.UserId == userId && rp.Status == status)
-          .OrderByDescending(rp => rp.Id) // most recently added first
-          .Select(rp => new ReadingListItemDto
-          {
-              Id = rp.Id,
-              BookId = rp.BookId,
-              ExternalId = rp.Book.ExternalId,
-              Title = rp.Book.Title,
-              Author = rp.Book.Author,
-              Isbn13 = rp.Book.Isbn13,
-              Status = rp.Status,
-              Progress = rp.Progress,
-              PagesRead = rp.PagesRead,
-              TotalPages = rp.TotalPages,
-              LastChapterRead = rp.LastChapterRead
-          })
-          .ToListAsync();
-  }
+        var query = _dbContext.ReadingProgresses
+            .Where(rp => rp.UserId == userId);
+
+        if (status.HasValue)
+        {
+            query = query.Where(rp => rp.Status == status.Value);
+        }
+
+        return await query
+            .OrderByDescending(rp => rp.Id)
+            .Select(rp => new ReadingListItemDto
+            {
+                Id = rp.Id,
+                BookId = rp.BookId,
+                ExternalId = rp.Book.ExternalId,
+                Title = rp.Book.Title,
+                Author = rp.Book.Author,
+                Isbn13 = rp.Book.Isbn13,
+                Status = rp.Status,
+                Progress = rp.Progress,
+                PagesRead = rp.PagesRead,
+                TotalPages = rp.TotalPages,
+                LastChapterRead = rp.LastChapterRead
+            })
+            .ToListAsync();
+    }
 }

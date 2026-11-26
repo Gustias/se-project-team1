@@ -308,3 +308,15 @@ export async function getReadingList(status, signal) {
 
   return handle(response);
 }
+
+export async function getPersonalLibrary(signal) {
+  const response = await fetch(
+    `${BASE_URL}/api/reading-progress`,
+    {
+      credentials: "include",
+      signal,
+    },
+  );
+
+  return handle(response);
+}
