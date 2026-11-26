@@ -1,12 +1,12 @@
+using System.Text.Json;
 using BookClub.Api.Controllers;
 using BookClub.Api.Dtos;
 using BookClub.Api.Models;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Antiforgery;
 using Moq;
-using System.Text.Json;
 
 namespace BookClub.Api.Tests;
 

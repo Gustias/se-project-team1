@@ -1,9 +1,9 @@
+using BookClub.Api.Dtos;
 using BookClub.Api.Models;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using BookClub.Api.Dtos;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Antiforgery;
 
 namespace BookClub.Api.Controllers;
 
